@@ -5,7 +5,7 @@ from py_tale import Py_Tale
 
 Has_already_started = False
 
-token = 'OTQ0NDczNzk2OTczMzE0MDY4.YhCHxA.qFh-a9aQBXxPDDDqRdTDVi9OBjs'
+token = 'OsebBEB345345%DY4.YbBbrRA.brb5h-abBREBEBREBR4545459OBjs'
 intents = Intents.all()
 
 client = commands.Bot(command_prefix='!', intents=intents, description='Hello World!!! <3')
