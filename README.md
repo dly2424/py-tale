@@ -131,7 +131,7 @@ request functions return dictionary responses and can be used with asyncio's `aw
 These functions can be called using asyncio's `await`
 
 `bot.create_console(server_id, body='{"should_launch":"false","ignore_offline":"false"}')`
-> This function will create a websocket connection in the background. Currently only returns None.
+> This function will create a websocket connection to a server's console in the background. Currently only returns None.
 ```
     Parameters:
         •server_id - the ID number of your server. Int object.
@@ -143,6 +143,7 @@ These functions can be called using asyncio's `await`
 #
 `bot.get_active_consoles()`
 > This function returns a dictionary of all server consoles you have open. Returns server ID and websocket object. You can use this to check what consoles are open.
+Equivalent of using the bot.console_websockets variable.
 ```
     Example return:
         {835264448: <websockets.legacy.client.WebSocketClientProtocol object at 0x0000028B08EE78E0>}
