@@ -173,6 +173,7 @@ class Py_Tale:
         self.ws_headers["x-api-key"] = "2l6aQGoNes8EHb94qMhqQ5m2iaiOM9666oDTPORf"
         self.ws_headers["User-Agent"] = self.client_id
         self.ws_headers["Authorization"] = f"Bearer {self.jsonResponse['access_token']}"
+        self.ws_headers["grant_type"] = "client_credentials"
         self.cred_initialized = True
         self.expires_in = int(self.jsonResponse['expires_in'])
         self.expire_time = datetime.now() + timedelta(seconds=self.expires_in-(60*10))
@@ -234,7 +235,9 @@ class Py_Tale:
     async def request_accept_invite(self, group_id):
         await self.wait_for_ready()
         accept = requests.post(f"https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/groups/invites/{group_id}", headers=self.ws_headers)
-        return accept.content
+        accept = accept.content.decode('utf-8')
+        accept = json.loads(accept)
+        return accept
 
     async def request_reject_invite(self, group_id):
         await self.wait_for_ready()
