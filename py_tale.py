@@ -126,7 +126,7 @@ class Py_Tale:
                 if k not in self.console_subscriptions:
                     self.console_subscriptions[k] = {}
                 if sub not in self.console_subscriptions[k]:
-                    self.console_subscriptions[k] = {sub:[callback]} #{server_id: {"playerkilled": [callbacks], "PlayerMovedChunk": [callbacks]}}
+                    self.console_subscriptions[k][sub] = [callback] #{server_id: {"playerkilled": [callbacks], "PlayerMovedChunk": [callbacks]}}
                 else:
                     self.console_subscriptions[k][sub].append(callback)
         else:
@@ -137,7 +137,7 @@ class Py_Tale:
             if server_id not in self.console_subscriptions:
                 self.console_subscriptions[server_id] = {}
             if sub not in self.console_subscriptions[server_id]:
-                self.console_subscriptions[server_id] = {sub:[callback]}
+                self.console_subscriptions[server_id][sub] = [callback]
             else:
                 self.console_subscriptions[server_id][sub].append(callback)
 
