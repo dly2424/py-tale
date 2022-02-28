@@ -7,8 +7,10 @@ Extra documentation for Alta's endpoints and websockets can be found in the Alta
 #
 # How to install
 
-Simply download the py_tale.py file and place into your main .py directory. You can then do a local import with
+Simply download the py_tale.py file and place into your main .py directory. You can then do a local import with:
+
 `from py_tale import Py_Tale`
+
 It's that easy!
 
 Though you'll also need some dependencies. `requests` `websockets` and `colorama`
