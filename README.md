@@ -7,7 +7,7 @@ Extra documentation for Alta's endpoints and websockets can be found in the Alta
 #
 # How to install
 
-Simply download the py_tale.py file and place into your main .py directory. You can then do a local import with:
+Simply download the py_tale.py file and place it into your main .py directory. You can then do a local import with:
 
 `from py_tale import Py_Tale`
 
@@ -55,7 +55,7 @@ request functions return dictionary responses and can be used with asyncio's `aw
 > Used for gathering info about a server's console.
 ```
     Parameters:
-        •group_id - the ID number if your server. Int object.
+        •group_id - the ID number of your server. Int object.
         •body (optional!) - default: '{"should_launch":"false","ignore_offline":"false"}' String object.
     Example return:
         {'server_id': 89586948, 'allowed': True, 'was_rejection': False, 'cold_start': False, 'fail_reason': 'Nothing', 'connection': {'server_id': 0, 'address': '23.78.436.17', 'local_address': '127.0.0.1', 'pod_name': 'att-release-ptx57-vvse', 'game_port': 7713, 'console_port': 7020, 'logging_port': 7712, 'websocket_port': 7667, 'webserver_port': 7780}, 'token': 'bv87s4y387b837v4tygo87ygo847tby874t8ogb7t8o7e54ytgb897ybtg87h438b7w3h4897tg38974yt873gybt8973y4bg58973y4gbt8973y4gb5o873ty4gb587t3yg489b7t34857gt3847tyb89374t89734tb98743tgb98743tbg9h8734tbh897'}
@@ -66,7 +66,7 @@ request functions return dictionary responses and can be used with asyncio's `aw
 > Used for gathering info about a server.
 ```
     Parameters:
-        •server_id - the ID number if your server. Int object.
+        •server_id - the ID number of your server. Int object.
     Example return:
         {'id': 93247934798, 'name': "Dlys awesome server", 'online_players': [], 'server_status': 'Online', 'final_status': 'Online', 'scene_index': 0, 'target': 1, 'region': 'north-america-agones', 'last_online': '2022-02-27T22:04:24.5444317Z', 'description': "Dlys private server.", 'playability': 0.0, 'version': 'main-0.0.79.7', 'group_id': 89586948, 'owner_type': 'Group', 'owner_id': 201274988, 'type': 'Normal', 'fleet': 'att-release', 'up_time': '7.09:36:59.0452399'}
 ```
@@ -84,7 +84,7 @@ request functions return dictionary responses and can be used with asyncio's `aw
 > Used to accept an invite to a server
 ```
     Parameters:
-        •group_id - the ID number if your server. Int object.
+        •group_id - the ID number of your server. Int object.
     Example return:
         {"group_id":123546432,"user_id":8938789,"username":"My_Bot","bot":True,"icon":0,"permissions":"Member","role_id":1,"created_at":"2022-02-27T20:54:52.144Z","type":"Accepted"}
 ```
@@ -94,7 +94,7 @@ request functions return dictionary responses and can be used with asyncio's `aw
 > Used to refuse an invite to a server
 ```
     Parameters:
-        •group_id - the ID number if your server. Int object.
+        •group_id - the ID number of your server. Int object.
     Example return:
         {"group_id":123546432,"user_id":8938789,"username":"My_Bot","bot":True,"icon":0,"permissions":"Member","role_id":1,"created_at":"2022-02-27T23:28:15.534Z","type":"Left"}'
 ```
@@ -104,7 +104,7 @@ request functions return dictionary responses and can be used with asyncio's `aw
 > Used to get members of a server - Note: This one returns a list of dictionaries!
 ```
     Parameters:
-        •group_id - the ID number if your server. Int object.
+        •group_id - the ID number of your server. Int object.
     Example return:
         [{'group_id': 4356745743678, 'user_id': 3465443532, 'username': 'dly', 'bot': False, 'icon': 0, 'permissions': 'Member, Moderator, Admin', 'role_id': 7, 'created_at': '2021-06-14T23:48:30.393Z', 'type': 'Accepted'}, {'group_id': 4356745743678, 'user_id': 985437643, 'username': 'cora', 'bot': False, 'icon': 0, 'permissions': 'Member', 'role_id': 1, 'created_at': '2021-06-14T23:52:27.485Z', 'type': 'Accepted'}, {'group_id': 4356745743678, 'user_id': 3245671435435, 'username': 'My_Bot', 'bot': True, 'icon': 0, 'permissions': 'Member', 'role_id': 1, 'created_at': '2022-02-27T23:52:30.191Z', 'type': 'Accepted'}]
 ```
@@ -132,7 +132,7 @@ These functions can be called using asyncio's `await`
 > This function will create a websocket connection in the background. Currently only returns None.
 ```
     Parameters:
-        •server_id - the ID number if your server. Int object.
+        •server_id - the ID number of your server. Int object.
         •body (optional!) - default: '{"should_launch":"false","ignore_offline":"false"}' String object.
     Example return:
         None
@@ -151,7 +151,7 @@ These functions can be called using asyncio's `await`
 > This function can be used to send commands to a server console just like the dashboard does.
 ```
     Parameters:
-        •server_id - the ID number if your server. Int object.
+        •server_id - the ID number of your server. Int object.
         •content - the command to send to the console. String object
     Example return:
         {'type': 'CommandResult', 'timeStamp': '2022-02-28T02:03:19.178102Z', 'data': {'Command': {'Parameters': [{'Type': 'PlayerList', 'HasDefault': False, 'Default': None, 'Attributes': [], 'Name': 'players', 'FullName': 'players'}], 'IsProgressive': False, 'ReturnType': 'System.Void', 'Priority': 0, 'Aliases': ['kill'], 'FullName': 'player.kill', 'Requirements': [{'TypeId': 'Alta.Console.ServerOnlyAttribute'}], 'Attributes': [], 'Name': 'kill', 'Description': 'Kills a player'}, 'ResultString': 'Success'}, 'commandId': 3}
@@ -199,7 +199,7 @@ Currently only returns None.
         •client_secret - Your client secret sent to you by Joel. String object
         •scope_string - Your scopes sent to you by Joel. Should be a long string with scopes separated by spaces String object
         •user_id - Your user ID sent to you by Joel. Int object
-        •debug (optional!) - Setting this to True will enable colored printing to console of all data being sent and receieved by websockets and endpoints. Bool object
+        •debug (optional!) - Setting this to True will enable colored printing to console of all data being sent and received by websockets and endpoints. Bool object
     Example return:
         None
 ```
@@ -249,7 +249,7 @@ Currently only returns None.
     Example return:
         {'id': 2, 'event': 'response', 'key': 'DELETE /ws/subscription/me-group-invite-create/900176244', 'content': '', 'responseCode': 200}
 ```
-**All other functions of the Py_tale library are either broken or intended to be disabled. More functions, features and stability coming very soon.**
+**All other functions of the Py_tale library are either broken or intended to be disabled. More functions, features and stability are coming very soon.**
 
 # Additional information
 
@@ -284,3 +284,5 @@ subscription/group-server-update/{server_id_here}
 subscription/group-server-create/{server_id_here}
 subscription/group-server-delete/{server_id_here}
 ```
+
+
