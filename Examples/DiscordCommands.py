@@ -3,6 +3,7 @@ from discord import Intents
 from discord.ext import commands
 from py_tale import Py_Tale
 
+global Has_already_started  # Make a global variable
 Has_already_started = False
 
 token = 'OsebBEB345345%DY4.YbBbrRA.brb5h-abBREBEBREBR4545459OBjs'
@@ -60,10 +61,11 @@ async def on_message(message):      # Called every time there is a message in di
 
 @client.event
 async def on_ready():                   # When the discord bot is fully ready
+    global Has_already_started          # Ensure that the variable is global
     if not Has_already_started:         # Check if we've already started (since this function can be called multiple times)
         print("Discord bot ready.")
         asyncio.create_task(bot.run())  # start the bot in a non-blocking coroutine
-
+        Has_already_started = True
 
 
 client.run(token)   # This runs our discord bot
