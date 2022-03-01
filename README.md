@@ -47,17 +47,26 @@ bot.config(client_id='client_sdv98798-vw3r314-afd1-69420smd',
 From here on out you're ready to start the bot! We can start it with `await bot.run()` or in the background with `asyncio.create_task(bot.run())`
 #
 #
+# Before you start
+
+Make sure you understand the difference between `server_id` and `group_id`. `server_id` refers to Server IDs that can be found on the list of servers on https://dash.townshiptale.com/servers/ where as `group_id` refers to the Group ID that can be found by clicking on your server in the dashboard and looking in your `Server Info` module for "Group".
+
+Using the dashboard is only one way to find out these IDs. There are multiple ways to programatically get the Group and Server IDs through Py_Tale :3
+
+These IDs are different numbers for the same server. When reading the documentation and using these functions, make sure you're using the right ID!
+#
+#
 # Request functions
 
 request functions return dictionary responses and can be used with asyncio's `await`
 
 **Here is a list of all current request functions:**
 
-`bot.request_post_console(group_id, body='{"should_launch":"false","ignore_offline":"false"}')`
+`bot.request_post_console(server_id, body='{"should_launch":"false","ignore_offline":"false"}')`
 > Used for gathering info about a server's console.
 ```
     Parameters:
-        •group_id - the ID number of your server. Int object.
+        •server_id - the ID number of your server. Int or String object.
         •body (optional!) - default: '{"should_launch":"false","ignore_offline":"false"}' String object.
     Example return:
         {'server_id': 89586948, 'allowed': True, 'was_rejection': False, 'cold_start': False, 'fail_reason': 'Nothing', 'connection': {'server_id': 0, 'address': '23.78.436.17', 'local_address': '127.0.0.1', 'pod_name': 'att-release-ptx57-vvse', 'game_port': 7713, 'console_port': 7020, 'logging_port': 7712, 'websocket_port': 7667, 'webserver_port': 7780}, 'token': 'bv87s4y387b837v4tygo87ygo847tby874t8ogb7t8o7e54ytgb897ybtg87h438b7w3h4897tg38974yt873gybt8973y4bg58973y4gbt8973y4gb5o873ty4gb587t3yg489b7t34857gt3847tyb89374t89734tb98743tgb98743tbg9h8734tbh897'}
@@ -68,7 +77,7 @@ request functions return dictionary responses and can be used with asyncio's `aw
 > Used for gathering info about a server.
 ```
     Parameters:
-        •server_id - the ID number of your server. Int object.
+        •server_id - the ID number of your server. Int or String object.
     Example return:
         {'id': 93247934798, 'name': "Dlys awesome server", 'online_players': [], 'server_status': 'Online', 'final_status': 'Online', 'scene_index': 0, 'target': 1, 'region': 'north-america-agones', 'last_online': '2022-02-27T22:04:24.5444317Z', 'description': "Dlys private server.", 'playability': 0.0, 'version': 'main-0.0.79.7', 'group_id': 89586948, 'owner_type': 'Group', 'owner_id': 201274988, 'type': 'Normal', 'fleet': 'att-release', 'up_time': '7.09:36:59.0452399'}
 ```
@@ -86,7 +95,7 @@ request functions return dictionary responses and can be used with asyncio's `aw
 > Used to accept an invite to a server
 ```
     Parameters:
-        •group_id - the ID number of your server. Int object.
+        •group_id - the ID number of your group. Int or String object.
     Example return:
         {"group_id":123546432,"user_id":8938789,"username":"My_Bot","bot":True,"icon":0,"permissions":"Member","role_id":1,"created_at":"2022-02-27T20:54:52.144Z","type":"Accepted"}
 ```
@@ -96,7 +105,29 @@ request functions return dictionary responses and can be used with asyncio's `aw
 > Used to refuse an invite to a server
 ```
     Parameters:
-        •group_id - the ID number of your server. Int object.
+        •group_id - the ID number of your group. Int or String object.
+    Example return:
+        {"group_id":123546432,"user_id":8938789,"username":"My_Bot","bot":True,"icon":0,"permissions":"Member","role_id":1,"created_at":"2022-02-27T23:28:15.534Z","type":"Left"}'
+```
+#
+#
+`bot.request_invite_player_id(group_id, player_id)`
+> Used to invite a player to join the specified group
+```
+    Parameters:
+        •group_id - the ID number of your group. Int or String object.
+        •player_id - the ID number of the player to invite. Int or String object
+    Example return:
+        {"group_id":123546432,"user_id":8938789,"username":"My_Bot","bot":True,"icon":0,"permissions":"Member","role_id":1,"created_at":"2022-02-27T23:28:15.534Z","type":"Left"}'
+```
+#
+#
+`bot.request_uninvite_player_id(group_id, player_id)`
+> Used to revoke a player's invite to join a server
+```
+    Parameters:
+        •group_id - the ID number of your group. Int or String object.
+        •player_id - the ID number of the player to revoke invite. Int or String object
     Example return:
         {"group_id":123546432,"user_id":8938789,"username":"My_Bot","bot":True,"icon":0,"permissions":"Member","role_id":1,"created_at":"2022-02-27T23:28:15.534Z","type":"Left"}'
 ```
@@ -106,7 +137,7 @@ request functions return dictionary responses and can be used with asyncio's `aw
 > Used to get members of a server - Note: This one returns a list of dictionaries!
 ```
     Parameters:
-        •group_id - the ID number of your server. Int object.
+        •group_id - the ID number of your group. Int or String object.
     Example return:
         [{'group_id': 4356745743678, 'user_id': 3465443532, 'username': 'dly', 'bot': False, 'icon': 0, 'permissions': 'Member, Moderator, Admin', 'role_id': 7, 'created_at': '2021-06-14T23:48:30.393Z', 'type': 'Accepted'}, {'group_id': 4356745743678, 'user_id': 985437643, 'username': 'cora', 'bot': False, 'icon': 0, 'permissions': 'Member', 'role_id': 1, 'created_at': '2021-06-14T23:52:27.485Z', 'type': 'Accepted'}, {'group_id': 4356745743678, 'user_id': 3245671435435, 'username': 'My_Bot', 'bot': True, 'icon': 0, 'permissions': 'Member', 'role_id': 1, 'created_at': '2022-02-27T23:52:30.191Z', 'type': 'Accepted'}]
 ```
@@ -179,8 +210,8 @@ When the event occurs, callback will be executed with event data passed to it. C
 Currently only returns None.
 ```
     Parameters:
-        •sub - The event you want to unsubscribe to. Not case sensitive. String object
-        •server_id (optional!) - If server_id is specified, you only unsubscribe to that event on that exact server. Otherwise, it will unsubscribe that subscription to all currently opened server consoles.
+        •sub - The event you want to unsubscribe to. Not case sensitive. String object.
+        •server_id (optional!) - If server_id is specified, you only unsubscribe to that event on that exact server. Otherwise, it will unsubscribe that subscription to all currently opened server consoles. Int object.
     Example return:
         None
 ```
