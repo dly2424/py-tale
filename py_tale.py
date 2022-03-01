@@ -217,14 +217,18 @@ class Py_Tale:
         return code
 
     async def request_invite_player_id(self, group_id, player_id):  # Uses GROUP id. - verified
-        await self.wait_for_ready()                                 # Accepts a player's requested invite to a server
+        await self.wait_for_ready()                                 # Invites a player to join the specified group
         code = requests.post(f"https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/groups/{group_id}/invites/{player_id}", headers=self.ws_headers)
-        return code.content.decode('utf-8')
+        code = code.content.decode('utf-8')
+        code = json.loads(code)
+        return code
 
     async def request_uninvite_player_id(self, group_id, player_id):    # Uses GROUP id. - verified
-        await self.wait_for_ready()                                     # Rejects a player's request to join the server
+        await self.wait_for_ready()                                     # Revokes a player's invite to join a server
         code = requests.delete(f"https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/groups/{group_id}/invites/{player_id}", headers=self.ws_headers)
-        return code.content.decode('utf-8')
+        code = code.content.decode('utf-8')
+        code = json.loads(code)
+        return code
 
     async def request_server_by_id(self, server_id): # Uses SERVER id. - verified
         await self.wait_for_ready()
