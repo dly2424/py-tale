@@ -118,7 +118,7 @@ request functions return dictionary responses and can be used with asyncio's `aw
         •group_id - the ID number of your group. Int or String object.
         •player_id - the ID number of the player to invite. Int or String object
     Example return:
-        {"group_id":123546432,"user_id":8938789,"username":"My_Bot","bot":True,"icon":0,"permissions":"Member","role_id":1,"created_at":"2022-02-27T23:28:15.534Z","type":"Left"}'
+        {'group_id': 24367535, 'user_id': 547463573, 'username': 'Dly2424', 'bot': False, 'icon': 0, 'permissions': 'Member', 'role_id': 1, 'created_at': '2022-03-01T06:17:44.7434669Z', 'type': 'Invited'}
 ```
 #
 #
@@ -129,7 +129,7 @@ request functions return dictionary responses and can be used with asyncio's `aw
         •group_id - the ID number of your group. Int or String object.
         •player_id - the ID number of the player to revoke invite. Int or String object
     Example return:
-        {"group_id":123546432,"user_id":8938789,"username":"My_Bot","bot":True,"icon":0,"permissions":"Member","role_id":1,"created_at":"2022-02-27T23:28:15.534Z","type":"Left"}'
+        {'group_id': 24367535, 'user_id': 547463573, 'username': 'Dly2424', 'bot': False, 'icon': 0, 'permissions': 'Member', 'role_id': 1, 'created_at': '2022-03-01T06:17:44.743Z', 'type': 'Kicked'}
 ```
 #
 #
