@@ -52,44 +52,44 @@ class Py_Tale:
             'client_secret': self.client_secret
         }
 
-    async def new_console_websocket(self, addr, port, server_id, token):
+    async def new_console_websocket(self, addr, port, server_id, token): # Uses SERVER id. - verified
         try:
             async with websockets.connect(f"ws://{addr}:{port}", open_timeout=100) as websocket:  # This is ws protocol not wss
                 await websocket.send(token)
                 self.console_websockets[server_id] = websocket
-                print(f"Console websocket for server {server_id} started!")
+                if self.debug:
+                    print(f"Console websocket for server {server_id} started!")
                 while True:
                     var = await websocket.recv()
                     var = json.loads(var)
                     if var["type"] == "CommandResult":
                         self.websocket_responses[int(var["commandId"])] = var
-                        print(Fore.GREEN + f"[RECEIVED] (console {server_id} websocket)< {var}", end=Style.RESET_ALL + "\n")
+                        if self.debug:
+                            print(Fore.GREEN + f"[RECEIVED] (console {server_id} websocket)< {var}", end=Style.RESET_ALL + "\n")
                         continue
                     if server_id in self.console_subscriptions:
                         if var["eventType"] in self.console_subscriptions[server_id]:
                             for function in self.console_subscriptions[server_id][var["eventType"]]:
-                                content = json.loads(f"{{'server_id':{server_id},{str(var)[1:]}".replace("'", '"'))
+                                content = json.loads(f"{{'server_id':{server_id},{str(var)[1:]}".replace("'", '"')) # Returns SERVER id, not GROUP id
                                 asyncio.create_task(function(content))  # call each function and pass the data.
                         if self.debug:
                             print(Fore.GREEN + f"[RECEIVED] (console {server_id} websocket)< {var}", end=Style.RESET_ALL + "\n")
-                print(Fore.RED + f"Console websocket for server {server_id} closed.", end=Style.RESET_ALL + "\n")  # This should never be called, but just in case.
+                if self.debug:
+                    print(Fore.RED + f"Console websocket for server {server_id} closed.", end=Style.RESET_ALL + "\n")  # This should never be called, but just in case.
         except Exception as e:
-            print(traceback.print_exc())
             print(Fore.RED + f"Server console {server_id} failed. Error details listed below:\n", e, end=Style.RESET_ALL + "\n")
+            print(traceback.print_exc())
             if server_id in self.console_websockets:
                 del self.console_websockets[server_id]
 
-    async def create_console(self, server_id, body='{"should_launch":"false","ignore_offline":"false"}'):
+    async def create_console(self, server_id, body='{"should_launch":"false","ignore_offline":"false"}'): # Uses SERVER id. - verified
         server_id = int(server_id)
         if server_id in self.console_websockets:
-            print(f"Console {server_id} is already opened. Cannot create a new console for this server.")
-            return
+            raise Exception(f"Console {server_id} is already opened. Cannot create a new console for this server.")
         console_res = requests.post(f"https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/servers/{server_id}/console", headers=self.ws_headers, data=body)
         console_res = console_res.content.decode('utf-8')
         console_res = json.loads(console_res)
-        print(console_res)
         if console_res["allowed"]:
-            print(console_res)
             addr = console_res["connection"]["address"]
             port = console_res["connection"]["websocket_port"]
             token = console_res["token"]
@@ -100,7 +100,7 @@ class Py_Tale:
     async def get_console_subs(self):
         return self.console_subscriptions
 
-    async def console_unsub(self, sub, server_id=None):
+    async def console_unsub(self, sub, server_id=None): # Uses SERVER id. - verified
         if server_id == None:
             for k, v in self.console_websockets:
                 if sub in self.console_subscriptions[k]:
@@ -116,7 +116,7 @@ class Py_Tale:
             content = f'{{"id":{self.increment()},"content":"websocket unsubscribe {sub}"}}'
             await self.console_websockets[server_id].send(content)
 
-    async def console_sub(self, sub, callback, server_id=None):
+    async def console_sub(self, sub, callback, server_id=None): # Uses SERVER id. - verified
         if server_id == None:
             for k, v in self.console_websockets:
                 content = f'{{"id":{self.increment()},"content":"websocket subscribe {sub}"}}'
@@ -141,7 +141,7 @@ class Py_Tale:
             else:
                 self.console_subscriptions[server_id][sub].append(callback)
 
-    async def send_command_console(self, server_id, content):
+    async def send_command_console(self, server_id, content): # Uses SERVER id. - verified
         i = self.increment()
         content = f'{{"id":{i},"content":"{content}"}}'
         self.websocket_responses[i] = None
@@ -164,7 +164,8 @@ class Py_Tale:
 
     async def request_temp_token(self):  # Function that gets token info for our websocket. Also gets a new token before the current one expires. (migrates websocket)
         self.ws_headers = {}
-        print("Obtaining new credentials!")
+        if self.debug:
+            print("Obtaining new credentials!")
         response = requests.post(self.token_endpoint, data=self.data)   # Here we request an access token using our config data.
         self.jsonResponse = response.json()  # Turn into dict           # We need to do this to get a token for the websocket.
         self.access_token = self.jsonResponse['access_token']
@@ -178,26 +179,26 @@ class Py_Tale:
         self.expires_in = int(self.jsonResponse['expires_in'])
         self.expire_time = datetime.now() + timedelta(seconds=self.expires_in-(60*10))
 
-    async def request_post_console(self, group_id, body='{"should_launch":"false","ignore_offline":"false"}'):
+    async def request_post_console(self, server_id, body='{"should_launch":"false","ignore_offline":"false"}'): # Uses SERVER id. - verified
         await self.wait_for_ready()
-        console_res = requests.post(f"https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/servers/{group_id}/console", headers=self.ws_headers, data=body)
+        console_res = requests.post(f"https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/servers/{server_id}/console", headers=self.ws_headers, data=body)
         console_res = console_res.content.decode('utf-8')
         console_res = json.loads(console_res)
         return console_res
 
-    async def request_ban_player(self, group_id, player_id):
+    async def request_ban_player(self, group_id, player_id): #Not even going to test this one. It's irreversible
         raise Exception("request_ban_player: This has been disabled due to console bans being irreversible. Remove the raise Exception line at the top of the function in py_tale to use.")
         await self.wait_for_ready()
         code = requests.post(f"https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/groups/{group_id}/bans/{player_id}", headers=self.ws_headers)
         return code
 
-    async def request_unban_player(self, group_id, player_id):
+    async def request_unban_player(self, group_id, player_id): #Not even going to test this one. It's irreversible
         raise Exception("request_unban_player: This has been disabled due to console bans being irreversible. Remove the raise Exception line at the top of the function in py_tale to use.")
         await self.wait_for_ready()
         code = requests.delete(f"https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/groups/{group_id}/bans/{player_id}", headers=self.ws_headers)
         return code
 
-    async def request_approve_invite(self, group_id, player_id):  # Maybe working? Untested.
+    async def request_approve_invite(self, group_id, player_id):  # Does not work. Going to have to check this... response 405
         await self.wait_for_ready()
         code = requests.post(f"https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/groups/{group_id}/requests/{player_id}", headers=self.ws_headers)
         if code.content.decode('utf-8') == "" or code.content.decode('utf-8') == None:
@@ -206,7 +207,7 @@ class Py_Tale:
             code = {"result":code.content.decode('utf-8'), "failed":False}
         return code
 
-    async def request_decline_invite(self, group_id, player_id):  # Maybe working? Untested.
+    async def request_decline_invite(self, group_id, player_id):  # Maybe working? Untested. Probably fails too.
         await self.wait_for_ready()
         code = requests.delete(f"https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/groups/{group_id}/requests/{player_id}", headers=self.ws_headers)
         if code.content.decode('utf-8') == "" or code.content.decode('utf-8') == None:
@@ -215,34 +216,36 @@ class Py_Tale:
             code = {"result":code.content.decode('utf-8'), "failed":False}
         return code
 
-    async def request_invite_player_id(self, group_id, player_id): # Error 403...
-        await self.wait_for_ready()
+    async def request_invite_player_id(self, group_id, player_id):  # Uses GROUP id. - verified
+        await self.wait_for_ready()                                 # Accepts a player's requested invite to a server
         code = requests.post(f"https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/groups/{group_id}/invites/{player_id}", headers=self.ws_headers)
         return code.content.decode('utf-8')
 
-    async def request_uninvite_player_id(self, group_id, player_id):# Probably doesnt work either
-        await self.wait_for_ready()
+    async def request_uninvite_player_id(self, group_id, player_id):    # Uses GROUP id. - verified
+        await self.wait_for_ready()                                     # Rejects a player's request to join the server
         code = requests.delete(f"https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/groups/{group_id}/invites/{player_id}", headers=self.ws_headers)
         return code.content.decode('utf-8')
 
-    async def request_server_by_id(self, server_id):
+    async def request_server_by_id(self, server_id): # Uses SERVER id. - verified
         await self.wait_for_ready()
         server_info = requests.get(f"https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/servers/{server_id}", headers=self.ws_headers)
         server_info = server_info.content.decode('utf-8')
         server_info = json.loads(server_info)
         return server_info
 
-    async def request_accept_invite(self, group_id):
-        await self.wait_for_ready()
+    async def request_accept_invite(self, group_id):    # Uses GROUP id. - verified
+        await self.wait_for_ready()                     # Accepts an invite to a server
         accept = requests.post(f"https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/groups/invites/{group_id}", headers=self.ws_headers)
         accept = accept.content.decode('utf-8')
         accept = json.loads(accept)
         return accept
 
-    async def request_reject_invite(self, group_id):
-        await self.wait_for_ready()
+    async def request_reject_invite(self, group_id):    # Uses GROUP id. - verified
+        await self.wait_for_ready()                     # Rejects an invite to a server
         reject = requests.delete(f"https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/groups/invites/{group_id}", headers=self.ws_headers)
-        return reject.content
+        reject = reject.content.decode('utf-8')
+        reject = json.loads(reject)
+        return reject
 
     async def request_current_groups(self):
         groups_list = requests.get(f"https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/groups/joined", headers=self.ws_headers)
@@ -250,7 +253,7 @@ class Py_Tale:
         groups_list = json.loads(groups_list)
         return groups_list
 
-    async def request_members(self, group_id):
+    async def request_members(self, group_id): # Uses GROUP id. - verified
         await self.wait_for_ready()
         members_list = requests.get(f"https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/groups/{group_id}/members", headers=self.ws_headers)
         members_list = members_list.content.decode('utf-8')
@@ -264,7 +267,7 @@ class Py_Tale:
         invites_list = json.loads(invites_list)
         return invites_list
 
-    async def request_search_name(self, username):
+    async def request_search_name(self, username): # Bots can't do this apparently...
         raise Exception("request_search_name currently does not work. It's not possible for bot accounts to do this.")
         await self.wait_for_ready()
         body = '{"username":"' + username + '"}'
@@ -331,12 +334,14 @@ class Py_Tale:
         try:
             async with websockets.connect(self.websocket_url, extra_headers=self.ws_headers, open_timeout=100) as websocket:
                 self.ws_connected = True
-                print("Websocket started!")
+                if not self.migrate:
+                    print("Main websocket started!")
                 self.ws = websocket
                 if self.migrate:
                     self.migrate = False
                     data = str({"id": self.increment(), "method": "POST", "path": "migrate", "content": self.migrate_token, "authorization": f"{self.ws_headers['Authorization']}"})
-                    print("migrated")
+                    if self.debug:
+                        print("migrated")
                     await websocket.send(data) #This is incorrect: [RECEIVED] (main websocket)< {'message': 'Internal server error', 'connectionId': 'OLdqff5iSwMAc9A=', 'requestId': 'OLdqkFOoywMFkbw='}
                     if self.debug:
                         print(Fore.CYAN + f"[SENT] (main websocket)> {data}", end=Style.RESET_ALL + "\n")  # end = Style.RESET_ALL prevents other prints from containing the set color
@@ -344,13 +349,9 @@ class Py_Tale:
                     try:
                         var = await websocket.recv()
                         var = json.loads(var)
-                        #print(var)
                         if "key" in var:
                             if var["key"] == "GET /ws/migrate":
                                 self.migrate_token = var["content"]
-                                #print(self.migrate_token)
-                                #loaded_content = json.loads(var["content"])
-                                #self.migrate_token = loaded_content["token"]
                         if "id" in var and "event" in var:
                             if var["event"] == "response" and int(var["id"]) in self.websocket_responses:
                                 self.websocket_responses[int(var["id"])] = var
@@ -364,10 +365,12 @@ class Py_Tale:
                             create = False
                             self.migrate = True
                             await self.request_temp_token()
-                            #print("migrating...")
+                            if self.debug:
+                                print("migrating...")
                             asyncio.create_task(self.run_ws())
                     except websockets.ConnectionClosedOK:
-                        #print("old websocket expired.")
+                        if self.debug:
+                            print("old websocket expired.")
                         return
                     except Exception:
                         traceback.print_exc()
