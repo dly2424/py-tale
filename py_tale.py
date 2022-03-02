@@ -56,9 +56,22 @@ class Py_Tale:
         try:
             async with websockets.connect(f"ws://{addr}:{port}", open_timeout=100) as websocket:  # This is ws protocol not wss
                 await websocket.send(token)
+                if self.debug:
+                    print(Fore.CYAN + f"[SENT] (console {server_id} websocket)> {token}", end=Style.RESET_ALL + "\n")  # end = Style.RESET_ALL prevents other prints from containing the set color
                 self.console_websockets[server_id] = websocket
                 if self.debug:
                     print(f"Console websocket for server {server_id} started!")
+                token_response = await websocket.recv()
+                token_response = json.loads(token_response)
+                if self.debug:
+                    print(Fore.GREEN + f"[RECEIVED] (console {server_id} websocket)< {token_response}", end=Style.RESET_ALL + "\n")
+                if server_id in self.console_subscriptions:
+                    if len(self.console_subscriptions[server_id]) > 0:
+                        for x in self.console_subscriptions[server_id]:
+                            to_send = f'{{"id":{self.increment()},"content":"websocket subscribe {x}"}}'
+                            await websocket.send(to_send)
+                            if self.debug:
+                                print(Fore.CYAN + f"[SENT] (console {server_id} websocket)> {to_send}", end=Style.RESET_ALL + "\n")  # end = Style.RESET_ALL prevents other prints from containing the set color
                 while True:
                     var = await websocket.recv()
                     var = json.loads(var)
@@ -78,9 +91,19 @@ class Py_Tale:
                     print(Fore.RED + f"Console websocket for server {server_id} closed.", end=Style.RESET_ALL + "\n")  # This should never be called, but just in case.
         except Exception as e:
             print(Fore.RED + f"Server console {server_id} failed. Error details listed below:\n", e, end=Style.RESET_ALL + "\n")
-            print(traceback.print_exc())
+            print(Fore.RED + "The server likely shutdown. I'll try to start the console again when the server is back up!", end=Style.RESET_ALL + "\n")
+            #print(traceback.print_exc())
             if server_id in self.console_websockets:
                 del self.console_websockets[server_id]
+
+    async def ensure_console(self, data):
+        parsed = json.loads(data["content"])
+        if "online_ping" in parsed:
+            server_id = parsed["id"]
+            if server_id not in self.console_websockets:
+                if self.debug:
+                    print(f"Group: {parsed['group_id']} with server ID: {parsed['id']}: server has started")
+                asyncio.create_task(self.create_console(server_id))
 
     async def create_console(self, server_id, body='{"should_launch":"false","ignore_offline":"false"}'): # Uses SERVER id. - verified
         server_id = int(server_id)
@@ -94,8 +117,16 @@ class Py_Tale:
             port = console_res["connection"]["websocket_port"]
             token = console_res["token"]
             asyncio.create_task(self.new_console_websocket(addr, port, server_id, token))
+        data = await self.request_server_by_id(server_id)
+        if "group_id" in data:
+            group_id = data["group_id"]
         else:
-            raise Exception(f"Server {server_id} connection rejected. Reason: {console_res['fail_reason']}")
+            raise Exception(f"Server {server_id} connection rejected. Could not gather data with request_server_by_id.")
+        if f"subscription/group-server-status/{group_id}" in self.main_subscriptions:
+            if self.ensure_console not in self.main_subscriptions[f"subscription/group-server-status/{group_id}"]:
+                await self.main_sub(f"subscription/group-server-status/{group_id}", self.ensure_console)
+        else:
+            await self.main_sub(f"subscription/group-server-status/{group_id}", self.ensure_console)
 
     async def get_console_subs(self):
         return self.console_subscriptions
@@ -128,18 +159,21 @@ class Py_Tale:
                 if sub not in self.console_subscriptions[k]:
                     self.console_subscriptions[k][sub] = [callback] #{server_id: {"playerkilled": [callbacks], "PlayerMovedChunk": [callbacks]}}
                 else:
-                    self.console_subscriptions[k][sub].append(callback)
+                    if callback not in self.console_subscriptions[server_id][sub]:
+                        self.console_subscriptions[k][sub].append(callback)
         else:
             content = f'{{"id":{self.increment()},"content":"websocket subscribe {sub}"}}'
-            await self.console_websockets[server_id].send(content)
-            if self.debug:
-                print(Fore.CYAN + f"[SENT] (console {server_id} websocket)> {content}", end=Style.RESET_ALL + "\n")  # end = Style.RESET_ALL prevents other prints from containing the set color
+            if server_id in self.console_websockets:
+                await self.console_websockets[server_id].send(content)
+                if self.debug:
+                    print(Fore.CYAN + f"[SENT] (console {server_id} websocket)> {content}", end=Style.RESET_ALL + "\n")  # end = Style.RESET_ALL prevents other prints from containing the set color
             if server_id not in self.console_subscriptions:
                 self.console_subscriptions[server_id] = {}
             if sub not in self.console_subscriptions[server_id]:
                 self.console_subscriptions[server_id][sub] = [callback]
             else:
-                self.console_subscriptions[server_id][sub].append(callback)
+                if callback not in self.console_subscriptions[server_id][sub]:
+                    self.console_subscriptions[server_id][sub].append(callback)
 
     async def send_command_console(self, server_id, content): # Uses SERVER id. - verified
         i = self.increment()
@@ -313,7 +347,7 @@ class Py_Tale:
         self.websocket_responses[i] = None
         return await self.responder(i)
 
-    async def main_sub(self, sub, callback):    #subscription/group-server-status/{server_id}
+    async def main_sub(self, sub, callback):    #subscription/group-server-status/{group_id}
         await self.wait_for_ws()                #subscription/{sub}/{self.client_id}
         if not isinstance(sub, str):
             raise Exception("main_sub: sub must be string")
@@ -328,8 +362,18 @@ class Py_Tale:
         if sub_name not in self.main_subscriptions:
             self.main_subscriptions[sub_name] = [callback]
         else:
-            self.main_subscriptions[sub_name].append(callback)
+            if callback not in self.main_subscriptions[sub_name]:
+                self.main_subscriptions[sub_name].append(callback)
         self.websocket_responses[i] = None
+        return await self.responder(i)
+
+    async def send_command_main(self, content):
+        i = self.increment()
+        content = f'{{"id":{i},"content":"{content}"}}'
+        self.websocket_responses[i] = None
+        await self.ws.send(content)
+        if self.debug:
+            print(Fore.CYAN + f"[SENT] (main websocket)> {content}", end=Style.RESET_ALL + "\n")  # end = Style.RESET_ALL prevents other prints from containing the set color
         return await self.responder(i)
 
     async def run_ws(self):
