@@ -162,7 +162,8 @@ request functions return dictionary responses and can be used with asyncio's `aw
 These functions can be called using asyncio's `await`
 
 `bot.create_console(server_id, body='{"should_launch":"false","ignore_offline":"false"}')`
-> This function will create a websocket connection to a server's console in the background. Currently only returns None.
+> This function will create a websocket connection to a server's console in the background. When the server closes, the connection is killed. 
+However this function will automatically connect back when the server starts up again. Currently only returns None.
 ```
     Parameters:
         •server_id - the ID number of your server. Int object.
@@ -194,6 +195,7 @@ Equivalent of using the bot.console_websockets variable.
 #
 `bot.console_sub(sub, callback, server_id=None)`
 > This function subscribes to an event on a server such as PlayerKilled, must have created a server websocket with bot.create_console first.
+This function will automatically re-sub to a server after the connection starts again after having been closed.
 When the event occurs, callback will be executed with event data passed to it. Currently only returns None.
 ```
     Parameters:
@@ -313,10 +315,11 @@ subscription/me-group-invite-create/{user_id_here}
 subscription/me-group-invite-delete/{user_id_here}
 subscription/me-group-request-create/{user_id_here}
 subscription/me-group-request-delete/{user_id_here}
-subscription/group-server-status/{server_id_here}
-subscription/group-server-update/{server_id_here}
-subscription/group-server-create/{server_id_here}
-subscription/group-server-delete/{server_id_here}
+subscription/group-server-status/{group_id_here}
+subscription/group-server-update/{group_id_here}
+subscription/group-server-create/{group_id_here}
+subscription/group-server-delete/{group_id_here}
+subscription/group-update/{group_id_here}
 ```
 
 
