@@ -122,12 +122,15 @@ class Py_Tale:
             group_id = data["group_id"]
         else:
             raise Exception(f"Server {server_id} connection rejected. Could not gather data with request_server_by_id.")
-        for iterate in self.main_subscriptions:         # {sub:{"callbacks":[callbacks], "fullname":"Fullnamehere"}}
-            if f"subscription/group-server-status/{group_id}" in iterate["fullname"]:
-                if self.ensure_console not in iterate["callbacks"]:
+        if len(self.main_subscriptions) != 0:
+            for iterate in self.main_subscriptions:         # {sub:{"callbacks":[callbacks], "fullname":"Fullnamehere"}}
+                if f"subscription/group-server-status/{group_id}" in iterate["fullname"]:
+                    if self.ensure_console not in iterate["callbacks"]:
+                        await self.main_sub(f"subscription/group-server-status/{group_id}", self.ensure_console)
+                else:
                     await self.main_sub(f"subscription/group-server-status/{group_id}", self.ensure_console)
-            else:
-                await self.main_sub(f"subscription/group-server-status/{group_id}", self.ensure_console)
+        else:
+            await self.main_sub(f"subscription/group-server-status/{group_id}", self.ensure_console)
 
     async def get_console_subs(self):
         return self.console_subscriptions
@@ -413,7 +416,7 @@ class Py_Tale:
                             if var["event"] == "response" and int(var["id"]) in self.websocket_responses:
                                 self.websocket_responses[int(var["id"])] = var
                             if var["event"] in self.main_subscriptions:
-                                for function in self.main_subscriptions[var["event"]]:
+                                for function in self.main_subscriptions[var["event"]]["callbacks"]:
                                     asyncio.create_task(function(var))
                         if self.debug:
                             print(Fore.GREEN + f"[RECEIVED] (main websocket)< {var}", end=Style.RESET_ALL + "\n")
