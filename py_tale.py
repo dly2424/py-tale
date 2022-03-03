@@ -124,7 +124,7 @@ class Py_Tale:
             raise Exception(f"Server {server_id} connection rejected. Could not gather data with request_server_by_id.")
         if len(self.main_subscriptions) != 0:
             for iterate in self.main_subscriptions:         # {sub:{"callbacks":[callbacks], "fullname":"Fullnamehere"}}
-                if f"subscription/group-server-status/{group_id}" in iterate["fullname"]:
+                if f"subscription/group-server-status/{group_id}" in self.main_subscriptions[iterate]["fullname"]:
                     if self.ensure_console not in iterate["callbacks"]:
                         await self.main_sub(f"subscription/group-server-status/{group_id}", self.ensure_console)
                 else:
@@ -436,6 +436,7 @@ class Py_Tale:
                         traceback.print_exc()
                         print("\n" + Fore.RED + "There was an error in the main websocket. See above. I will try to start it again in 1 minute", end=Style.RESET_ALL + "\n\n")
                         await asyncio.sleep(60)
+                        self.migrate = False
                         asyncio.create_task(self.run_ws())
                         return
         except asyncio.TimeoutError:
