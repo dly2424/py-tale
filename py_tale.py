@@ -125,7 +125,7 @@ class Py_Tale:
         if len(self.main_subscriptions) != 0:
             for iterate in self.main_subscriptions:         # {sub:{"callbacks":[callbacks], "fullname":"Fullnamehere"}}
                 if f"subscription/group-server-status/{group_id}" in self.main_subscriptions[iterate]["fullname"]:
-                    if self.ensure_console not in iterate["callbacks"]:
+                    if self.ensure_console not in self.main_subscriptions[iterate]["callbacks"]:
                         await self.main_sub(f"subscription/group-server-status/{group_id}", self.ensure_console)
                 else:
                     await self.main_sub(f"subscription/group-server-status/{group_id}", self.ensure_console)
