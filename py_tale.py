@@ -122,11 +122,12 @@ class Py_Tale:
             group_id = data["group_id"]
         else:
             raise Exception(f"Server {server_id} connection rejected. Could not gather data with request_server_by_id.")
-        if f"subscription/group-server-status/{group_id}" in self.main_subscriptions:
-            if self.ensure_console not in self.main_subscriptions[f"subscription/group-server-status/{group_id}"]:
+        for iterate in self.main_subscriptions:         # {sub:{"callbacks":[callbacks], "fullname":"Fullnamehere"}}
+            if f"subscription/group-server-status/{group_id}" in iterate["fullname"]:
+                if self.ensure_console not in iterate["callbacks"]:
+                    await self.main_sub(f"subscription/group-server-status/{group_id}", self.ensure_console)
+            else:
                 await self.main_sub(f"subscription/group-server-status/{group_id}", self.ensure_console)
-        else:
-            await self.main_sub(f"subscription/group-server-status/{group_id}", self.ensure_console)
 
     async def get_console_subs(self):
         return self.console_subscriptions
@@ -360,10 +361,10 @@ class Py_Tale:
         if self.debug:
             print(Fore.CYAN + f"[SENT] (main websocket)> {content}", end=Style.RESET_ALL + "\n")  # end = Style.RESET_ALL prevents other prints from containing the set color
         if sub_name not in self.main_subscriptions:
-            self.main_subscriptions[sub_name] = [callback]
+            self.main_subscriptions[sub_name] = {"callbacks":[callback], "fullname": sub}
         else:
-            if callback not in self.main_subscriptions[sub_name]:
-                self.main_subscriptions[sub_name].append(callback)
+            if callback not in self.main_subscriptions[sub_name]["callbacks"]:
+                self.main_subscriptions[sub_name]["callbacks"].append(callback)
         self.websocket_responses[i] = None
         return await self.responder(i)
 
@@ -383,8 +384,16 @@ class Py_Tale:
             async with websockets.connect(self.websocket_url, extra_headers=self.ws_headers, open_timeout=100) as websocket:
                 self.ws_connected = True
                 if not self.migrate:
-                    print("Main websocket started!")
-                self.ws = websocket
+                    print("Main websocket started!") ###############
+                    if len(self.main_subscriptions) > 0:
+                        for iterate in self.main_subscriptions:
+                            fullname = iterate["fullname"]
+                            i = self.increment()
+                            to_send = f'{{"id": {i}, "method": "POST", "path": "{fullname}", "authorization": "{self.ws_headers["Authorization"]}"}}'
+                            await websocket.send(to_send)
+                            if self.debug:
+                                print(Fore.CYAN + f"[SENT] (main websocket)> {to_send}", end=Style.RESET_ALL + "\n")  # end = Style.RESET_ALL prevents other prints from containing the set color
+                self.ws = websocket                 ################
                 if self.migrate:
                     self.migrate = False
                     data = str({"id": self.increment(), "method": "POST", "path": "migrate", "content": self.migrate_token, "authorization": f"{self.ws_headers['Authorization']}"})
@@ -422,7 +431,7 @@ class Py_Tale:
                         return
                     except Exception:
                         traceback.print_exc()
-                        print(Fore.RED + "There was an error in the main websocket. See above. I will try to start it again in 1 minute", end=Style.RESET_ALL + "\n")
+                        print("\n" + Fore.RED + "There was an error in the main websocket. See above. I will try to start it again in 1 minute", end=Style.RESET_ALL + "\n\n")
                         await asyncio.sleep(60)
                         asyncio.create_task(self.run_ws())
                         return
