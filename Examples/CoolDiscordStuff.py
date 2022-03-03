@@ -91,7 +91,7 @@ async def on_ready(): #When the discord bot is fully ready
     print("ready")
     asyncio.create_task(bot.run()) #start the bot
     vars.cats_server = vars.client.get_guild(24568634455656343)        #Get the discord
-4    vars.oof_chan = vars.cats_server.get_channel(8457846578546879754)    #Get certain channel
+    vars.oof_chan = vars.cats_server.get_channel(8457846578546879754)    #Get certain channel
     vars.join_chan = vars.cats_server.get_channel(4567456856848569478)   #Get certain channel
     await bot.wait_for_ws()
     att_server = 5678959
