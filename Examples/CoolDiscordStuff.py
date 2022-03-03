@@ -6,7 +6,7 @@ from py_tale import Py_Tale
 class Vars:                 #This creates variables we can use anywhere
     def __init__(self):
         self.intents = Intents.all()
-        self.token = 'nkIubiubIOBiyuoouiyv&G98h9BUIB9byub9v.iG*gvb899by'    #This is a fake token, use your own!
+        self.token = 'nkIubiubIOBiyuoouiyv&G98h9BUIB9byub9v.iG*gvb899by'
         self.client = commands.Bot(command_prefix='!', intents=self.intents, description='Hello World!!! <3')
         self.cats_server = None
         self.log_chan = None
@@ -14,7 +14,7 @@ class Vars:                 #This creates variables we can use anywhere
         self.oof_chan = None
         self.join_chan = None
 
-vars = Vars()       #We can access all of the class 'Vars' variables with vars now.
+vars = Vars()    #We can access all of the class 'Vars' variables with vars now.
 
 
 async def on_invited(data):                         #This function is called everytime you're invited to a server.
@@ -55,7 +55,7 @@ async def on_playermove(data):                      #This function is called eve
 @vars.client.event
 async def on_message(message):
 
-    if message.author == vars.client.user:           #Make sure the bot doesn't respond to itself
+    if message.author == vars.client.user:          #Make sure the bot doesn't respond to itself
         return
 
     if message.content.startswith("!getconsoles"):  #Returns the active consoles and corresponding websockets
@@ -68,7 +68,7 @@ async def on_message(message):
         consoles = await bot.get_console_subs()
         await message.channel.send(consoles)
 
-    if message.content.startswith("!command "):                             #Sends a manual command to a server and prints the response
+    if message.content.startswith("!command "):                                 #Sends a manual command to a server and prints the response
         server_id =int(message.content.split(" ", maxsplit=2)[1].strip())       #Usage: !command {server_id} player kill dly2424
         command = message.content.split(" ", maxsplit=2)[2].strip()
         await bot.wait_for_ws()
@@ -90,12 +90,13 @@ async def on_message(message):
 async def on_ready(): #When the discord bot is fully ready
     print("ready")
     asyncio.create_task(bot.run()) #start the bot
-    vars.cats_server = vars.client.get_guild(24568634455656343)        #Get the discord
-    vars.oof_chan = vars.cats_server.get_channel(8457846578546879754)    #Get certain channel
-    vars.join_chan = vars.cats_server.get_channel(4567456856848569478)   #Get certain channel
+    vars.cats_server = vars.client.get_guild(24568634455656343)             #Get the discord
+    vars.log_chan = vars.cats_server.get_channel(546546576566655436653)     #Get certain channel
+    vars.oof_chan = vars.cats_server.get_channel(576357684344586864835)     #Get certain channel
+    vars.join_chan = vars.cats_server.get_channel(4567456856848569478)      #Get certain channel
     await bot.wait_for_ws()
     att_server = 5678959
-    await bot.create_console(att_server)       #this will start a connection to this console every time the server starts up
+    await bot.create_console(att_server)    #this will start a connection to this console every time the server starts up
     await asyncio.sleep(4)
     await bot.console_sub("PlayerMovedChunk", on_playermove, server_id=att_server)         #subscribe to player moving chunks event on cats_server (this keeps the sub through server restarts)
     await bot.console_sub("PlayerKilled", on_playerkilled, server_id=att_server)           #subscribe to player dying event on cats_server (this keeps the sub through server restarts)
@@ -105,7 +106,7 @@ async def on_ready(): #When the discord bot is fully ready
 
 bot = Py_Tale()
 bot.config(client_id='client_nJNui9o90-iNi3-Nunb-9Iu8-IN0oh08hIi',  # This function sets our credentials
-           user_id=8983879,                                         # These are fake credentials, use your own!
+           user_id=8983879,
            scope_string='ws.group ws.group_members ws.group_servers ws.group_bans ws.group_invites group.info group.join group.leave group.view group.members group.invite server.view server.console',
            client_secret='jbIYug8gy86G78vy8yv89yb8b8YV8yyyvg9yv9vVYy99yv8yA==',
            debug=True)
