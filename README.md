@@ -7,6 +7,12 @@ Extra documentation for Alta's endpoints and websockets can be found in the Alta
 Make sure to take a look into the /Examples folder! I'm still updating and adding examples. Currently they're unrefined projects that only demonstrate some of the library's capabilities. I'll be writing more comprehensive examples within the next few days!
 #
 #
+# The goal
+
+The goal of py-tale is to provide an _**easy to read**_, _**easy to use**_ and _**stable**_ platform for development of ATT bots in Python. The library keeps it simple, with asynchronous functions that can be called to get data and perform actions. There are no complicated or unnecessary concepts. The library focuses on freedom to write as you see fit, intermediate to expert programmers alike.
+
+#
+#
 # How to install
 
 Simply download the py_tale.py file and place it into your main .py directory. You can then do a local import with:
