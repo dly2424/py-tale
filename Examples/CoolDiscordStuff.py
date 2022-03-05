@@ -94,10 +94,9 @@ async def on_ready(): #When the discord bot is fully ready
     vars.log_chan = vars.cats_server.get_channel(546546576566655436653)     #Get certain channel
     vars.oof_chan = vars.cats_server.get_channel(576357684344586864835)     #Get certain channel
     vars.join_chan = vars.cats_server.get_channel(4567456856848569478)      #Get certain channel
-    await bot.wait_for_ws()
-    att_server = 5678959
-    await bot.create_console(att_server)    #this will start a connection to this console every time the server starts up
-    await asyncio.sleep(4)
+    await bot.wait_for_ws()     # Wait to make sure the main websocket is running before continuing.
+    att_server = 5678959        # The ID of your server (not group ID or invite ID!)
+    await bot.create_console(att_server, timeout=5)    #this will start a connection to this console every time the server starts up
     await bot.console_sub("PlayerMovedChunk", on_playermove, server_id=att_server)         #subscribe to player moving chunks event on cats_server (this keeps the sub through server restarts)
     await bot.console_sub("PlayerKilled", on_playerkilled, server_id=att_server)           #subscribe to player dying event on cats_server (this keeps the sub through server restarts)
     await bot.console_sub("PlayerJoined", on_playerjoin, server_id=att_server)             #subscribe to player joining event on cats_server (this keeps the sub through server restarts)
