@@ -1,0 +1,12 @@
+{
+  "GuildNameHere":
+  {
+    "guild_id": 123456789,
+    "admin_role": 987654321,
+    "playerkilled_channel": 123123123123,
+    "chunk_channel": 345345345345,
+    "playerjoin_channel": 678678678678,
+    "att_server_id": 9999999,
+    "att_group_id": 8888888
+  }
+}
