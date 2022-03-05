@@ -2,7 +2,7 @@
 ## A library for developing ATT bots in Python.
 
 This library is designed to be fully async. This means it is fully compatible with Discord's python library [discord.py](https://discordpy.readthedocs.io/en/latest/api.html).
-Extra documentation for Alta's endpoints and websockets can be found in the Alta_Docs folder.
+Extra documentation for Alta's endpoints and websockets can be found in the /Alta_Docs folder. (coming soon!)
 
 Make sure to take a look into the /Examples folder! I'm still updating and adding examples. Currently they're unrefined projects that only demonstrate some of the library's capabilities. I'll be writing more comprehensive examples within the next few days!
 #
@@ -21,7 +21,7 @@ Simply download the py_tale.py file and place it into your main .py directory. Y
 
 It's that easy!
 
-Though you'll also need some dependencies. `requests` `websockets` and `colorama`
+Though you'll also need some dependencies. `requests`, `websockets` and `colorama`
 Install them with these pip commands in your terminal/command prompt!
 
 `python -m pip install requests`
@@ -167,12 +167,13 @@ request functions return dictionary responses and can be used with asyncio's `aw
 
 These functions can be called using asyncio's `await`
 
-`bot.create_console(server_id, body='{"should_launch":"false","ignore_offline":"false"}')`
+`bot.create_console(server_id, timeout=10, body='{"should_launch":"false","ignore_offline":"false"}')`
 > This function will create a websocket connection to a server's console in the background. When the server closes, the connection is killed. 
 However this function will automatically connect back when the server starts up again. Currently only returns None.
 ```
     Parameters:
         •server_id - the ID number of your server. Int object.
+        •timeout (optional!) - the max number in seconds to wait for a successful connection before throwing an Exception. default: 10. Int object.
         •body (optional!) - default: '{"should_launch":"false","ignore_offline":"false"}' String object.
     Example return:
         None
@@ -291,10 +292,18 @@ Currently only returns None.
     Example return:
         {'id': 2, 'event': 'response', 'key': 'DELETE /ws/subscription/me-group-invite-create/900176244', 'content': '', 'responseCode': 200}
 ```
-**All other functions of the Py_tale library are either broken or intended to be disabled. More functions, features and stability are coming very soon.**
+**All other functions of the Py_tale library are either broken or intended to be disabled.**
 
 # Additional information
-
+List of custom Exceptions
+```
+py_tale.ConsoleTimeoutException             # used when create_console times out
+py_tale.ConsoleAlreadyCreatedException      # used when trying to open a console that's already open
+py_tale.ConsoleCreateFailedException        # used when getting a generic error in create_console
+py_tale.FunctionDisabledException           # used when trying to call a disabled function
+py_tale.WrongArgumentTypeException          # used when you pass an incorrect argument object type to a function
+py_tale.WrongArgumentFormatException        # used when you pass an argument that's in the wrong format
+```
 Current list of known subscriptions for server consoles: (Use these in console_sub/console_unsub)
 ```
 PlayerJoined
