@@ -17,7 +17,36 @@ except Exception as e:
 
 init()  # Colorama function call that is required for setting up colors properly.
 
+#Py_tale Exceptions
+class Error(Exception):
+    """Base class for other exceptions"""
+    pass
 
+class ConsoleTimeoutException(Error):
+    """Exception for when create_console timeouts"""
+    pass
+
+class ConsoleAlreadyCreatedException(Error):
+    """Exception for when create_console already has that connection open"""
+    pass
+
+class ConsoleCreateFailedException(Error):
+    """Exception for when create_console fails for an unknown reason"""
+    pass
+
+class FunctionDisabledException(Error):
+    """Exception for trying to use an intentionally disabled function"""
+    pass
+
+class WrongArgumentTypeException(Error):
+    """Exception for passing the wrong object type to a function's parameter"""
+    pass
+
+class WrongArgumentFormatException(Error):
+    """Exception for using the wrong format with a passed argument to a function's parameter"""
+    pass
+
+#Main program
 class Py_Tale:
 
     def __init__(self):  # Function that automatically declares variables
@@ -58,11 +87,11 @@ class Py_Tale:
                 await websocket.send(token)
                 if self.debug:
                     print(Fore.CYAN + str(datetime.now()).split(".")[0], "||", f"[SENT] (console {server_id} websocket)> {token}", end=Style.RESET_ALL + "\n")  # end = Style.RESET_ALL prevents other prints from containing the set color
-                self.console_websockets[server_id] = websocket
                 if self.debug:
                     print(str(datetime.now()).split(".")[0], "||", f"Console websocket for server {server_id} started!")
                 token_response = await websocket.recv()
                 token_response = json.loads(token_response)
+                self.console_websockets[server_id] = websocket
                 if self.debug:
                     print(Fore.GREEN + str(datetime.now()).split(".")[0], "||", f"[RECEIVED] (console {server_id} websocket)< {token_response}", end=Style.RESET_ALL + "\n")
                 if server_id in self.console_subscriptions:
@@ -105,32 +134,43 @@ class Py_Tale:
                     print(str(datetime.now()).split(".")[0], "||", f"Group: {parsed['group_id']} with server ID: {parsed['id']}: server has started")
                 asyncio.create_task(self.create_console(server_id))
 
-    async def create_console(self, server_id, body='{"should_launch":"false","ignore_offline":"false"}'): # Uses SERVER id. - verified
-        server_id = int(server_id)
-        if server_id in self.console_websockets:
-            raise Exception(f"Console {server_id} is already opened. Cannot create a new console for this server.")
-        console_res = requests.post(f"https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/servers/{server_id}/console", headers=self.ws_headers, data=body)
-        console_res = console_res.content.decode('utf-8')
-        console_res = json.loads(console_res)
-        if console_res["allowed"]:
-            addr = console_res["connection"]["address"]
-            port = console_res["connection"]["websocket_port"]
-            token = console_res["token"]
-            asyncio.create_task(self.new_console_websocket(addr, port, server_id, token))
-        data = await self.request_server_by_id(server_id)
-        if "group_id" in data:
-            group_id = data["group_id"]
-        else:
-            raise Exception(f"Server {server_id} connection rejected. Could not gather data with request_server_by_id.")
-        if len(self.main_subscriptions) != 0:
-            for iterate in dict(self.main_subscriptions):         # {sub:{"callbacks":[callbacks], "fullname":"Fullnamehere"}}
-                if f"subscription/group-server-status/{group_id}" in self.main_subscriptions[iterate]["fullname"]:
-                    if self.ensure_console not in self.main_subscriptions[iterate]["callbacks"]:
+    async def create_console(self, server_id, timeout=10, body='{"should_launch":"false","ignore_offline":"false"}'): # Uses SERVER id. - verified
+        try:
+            timeout = timeout*100 #convert the seconds into the int we use to check time
+            server_id = int(server_id)
+            if server_id in self.console_websockets:
+                raise ConsoleAlreadyCreatedException(f"Console {server_id} is already opened. Cannot create a new console for this server.")
+            console_res = requests.post(f"https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/servers/{server_id}/console", headers=self.ws_headers, data=body)
+            console_res = console_res.content.decode('utf-8')
+            console_res = json.loads(console_res)
+            if console_res["allowed"]:
+                addr = console_res["connection"]["address"]
+                port = console_res["connection"]["websocket_port"]
+                token = console_res["token"]
+                asyncio.create_task(self.new_console_websocket(addr, port, server_id, token))
+            data = await self.request_server_by_id(server_id)
+            if "group_id" in data:
+                group_id = data["group_id"]
+            else:
+                raise ConsoleCreateFailedException(f"Server {server_id} connection rejected. Could not gather data with request_server_by_id.")
+            if len(self.main_subscriptions) != 0:
+                for iterate in dict(self.main_subscriptions):         # {sub:{"callbacks":[callbacks], "fullname":"Fullnamehere"}}
+                    if f"subscription/group-server-status/{group_id}" in self.main_subscriptions[iterate]["fullname"]:
+                        if self.ensure_console not in self.main_subscriptions[iterate]["callbacks"]:
+                            await self.main_sub(f"subscription/group-server-status/{group_id}", self.ensure_console)
+                    else:
                         await self.main_sub(f"subscription/group-server-status/{group_id}", self.ensure_console)
-                else:
-                    await self.main_sub(f"subscription/group-server-status/{group_id}", self.ensure_console)
-        else:
-            await self.main_sub(f"subscription/group-server-status/{group_id}", self.ensure_console)
+            else:
+                await self.main_sub(f"subscription/group-server-status/{group_id}", self.ensure_console)
+        except Exception as e:
+            raise ConsoleCreateFailedException(f"Failed to create console for server {server_id}. Ensure your bot is a moderator member of the ATT server. Error:\n {e}")
+        while server_id not in self.console_websockets:
+            await asyncio.sleep(.01)
+            timeout -= 1
+            if timeout <= 0:
+                print(self.console_websockets)
+                raise ConsoleTimeoutException(f"Failed to create console for {server_id}")
+        return
 
     async def get_console_subs(self):
         return self.console_subscriptions
@@ -145,6 +185,7 @@ class Py_Tale:
                     if self.console_subscriptions[k] == {}:
                         del self.console_subscriptions[k]
         else:
+            server_id = int(server_id)
             del self.console_subscriptions[server_id][sub]
             if self.console_subscriptions[server_id] == {}:
                 del self.console_subscriptions[server_id]
@@ -154,6 +195,7 @@ class Py_Tale:
     async def console_sub(self, sub, callback, server_id=None): # Uses SERVER id. - verified
         if server_id == None:
             for k, v in self.console_websockets:
+                await asyncio.sleep(.025)
                 content = f'{{"id":{self.increment()},"content":"websocket subscribe {sub}"}}'
                 await v.send(content)
                 if self.debug:
@@ -166,6 +208,8 @@ class Py_Tale:
                     if callback not in self.console_subscriptions[server_id][sub]:
                         self.console_subscriptions[k][sub].append(callback)
         else:
+            await asyncio.sleep(.025) # Limit sending speed slightly.
+            server_id = int(server_id)
             content = f'{{"id":{self.increment()},"content":"websocket subscribe {sub}"}}'
             if server_id in self.console_websockets:
                 await self.console_websockets[server_id].send(content)
@@ -185,7 +229,6 @@ class Py_Tale:
         self.websocket_responses[i] = None
         await self.console_websockets[int(server_id)].send(content)
         return await self.responder(i)
-
 
     async def get_active_consoles(self):
         return self.console_websockets
@@ -225,13 +268,13 @@ class Py_Tale:
         return console_res
 
     async def request_ban_player(self, group_id, player_id): #Not even going to test this one. It's irreversible
-        raise Exception("request_ban_player: This has been disabled due to console bans being irreversible. Remove the raise Exception line at the top of the function in py_tale to use.")
+        raise FunctionDisabledException("request_ban_player: This has been disabled due to console bans being irreversible. Remove the raise Exception line at the top of the function in py_tale to use.")
         await self.wait_for_ready()
         code = requests.post(f"https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/groups/{group_id}/bans/{player_id}", headers=self.ws_headers)
         return code
 
     async def request_unban_player(self, group_id, player_id): #Not even going to test this one. It's irreversible
-        raise Exception("request_unban_player: This has been disabled due to console bans being irreversible. Remove the raise Exception line at the top of the function in py_tale to use.")
+        raise FunctionDisabledException("request_unban_player: This has been disabled due to console bans being irreversible. Remove the raise Exception line at the top of the function in py_tale to use.")
         await self.wait_for_ready()
         code = requests.delete(f"https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/groups/{group_id}/bans/{player_id}", headers=self.ws_headers)
         return code
@@ -310,7 +353,7 @@ class Py_Tale:
         return invites_list
 
     async def request_search_name(self, username): # Bots can't do this apparently...
-        raise Exception("request_search_name currently does not work. It's not possible for bot accounts to do this.")
+        raise FunctionDisabledException("request_search_name currently does not work. It's not possible for bot accounts to do this.")
         await self.wait_for_ready()
         body = '{"username":"' + username + '"}'
         result = requests.post("https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/users/search/username", headers=self.ws_headers)
@@ -337,10 +380,10 @@ class Py_Tale:
     async def main_unsub(self, sub):
         await self.wait_for_ws()
         if not isinstance(sub, str):
-            raise Exception("main_sub: sub must be string")
+            raise WrongArgumentTypeException("main_sub: sub must be string")
         sub_name = sub.split("/")[1]
         if len(sub.split("/")) != 3:
-            raise Exception("main_sub: wrong subscription format. Example format: subscription/group-server-status/{server_id} or subscription/me-group-invite-create/{client_id}")
+            raise WrongArgumentFormatException("main_sub: wrong subscription format. Example format: subscription/group-server-status/{server_id} or subscription/me-group-invite-create/{client_id}")
         i = self.increment()
         content = f'{{"id": {i}, "method": "DELETE", "path": "{sub}", "authorization": "{self.ws_headers["Authorization"]}"}}'
         await self.ws.send(content)
@@ -354,10 +397,10 @@ class Py_Tale:
     async def main_sub(self, sub, callback):    #subscription/group-server-status/{group_id}
         await self.wait_for_ws()                #subscription/{sub}/{self.client_id}
         if not isinstance(sub, str):
-            raise Exception("main_sub: sub must be string")
+            raise WrongArgumentTypeException("main_sub: sub must be string")
         sub_name = sub.split("/")[1]
         if len(sub.split("/")) != 3:
-            raise Exception("main_sub: wrong subscription format. Example format: subscription/group-server-status/{server_id} or subscription/me-group-invite-create/{client_id}")
+            raise WrongArgumentFormatException("main_sub: wrong subscription format. Example format: subscription/group-server-status/{server_id} or subscription/me-group-invite-create/{client_id}")
         i = self.increment()
         content = f'{{"id": {i}, "method": "POST", "path": "{sub}", "authorization": "{self.ws_headers["Authorization"]}"}}'
         await self.ws.send(content)
@@ -372,6 +415,7 @@ class Py_Tale:
         return await self.responder(i)
 
     async def send_command_main(self, content):
+        raise FunctionDisabledException("send_command_main: This has been disabled due to being untested and unneeded. Remove the raise FunctionDisabledException line at the top of the function in py_tale to use.")
         i = self.increment()
         content = f'{{"id":{i},"content":"{content}"}}'
         self.websocket_responses[i] = None
