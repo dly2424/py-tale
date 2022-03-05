@@ -6,7 +6,7 @@ from py_tale import Py_Tale
 global Has_already_started  # Make a global variable
 Has_already_started = False
 
-##################################       This example is trash, but a good reference i guess? I recommend CoolDiscordStuff.py     #################################################
+##############################       This example is trash, but a good reference i guess? I recommend CoolDiscordStuff.py or Py_Bot     #############################################
 
 token = 'OsebBEB345345%DY4.YbBbrRA.brb5h-abBREBEBREBR4545459OBjs'
 intents = Intents.all()
