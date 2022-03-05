@@ -55,7 +55,7 @@ async def on_invited(data):                         #This function is called eve
 async def on_playerjoin(data):                      #This function is called everytime a player joins
     username = data["data"]["user"]["username"]
     server_id = data["server_id"]
-    for k in my_data.discord_info:
+    for k in dict(my_data.discord_info):
         if my_data.discord_info[k]["att_server_id"] == server_id:
             await my_data.client.get_guild(my_data.discord_info[k]["guild_id"]).get_channel(my_data.discord_info[k]["playerjoin_channel"]).send(f"```{username} Joined the server```")
 
@@ -63,7 +63,7 @@ async def on_playerjoin(data):                      #This function is called eve
 async def on_playerleft(data):                      #This function is called everytime a player leaves
     username = data["data"]["user"]["username"]
     server_id = data["server_id"]
-    for k in my_data.discord_info:
+    for k in dict(my_data.discord_info):
         if my_data.discord_info[k]["att_server_id"] == server_id:
             await my_data.client.get_guild(my_data.discord_info[k]["guild_id"]).get_channel(my_data.discord_info[k]["playerjoin_channel"]).send(f"```{username} Left the server```")
 
@@ -73,7 +73,7 @@ async def on_playerkilled(data):                    #This function is called eve
     server_id = data["server_id"]
     reason = data["data"]["source"]
     f"```{username} was killed by {reason}```"
-    for k in my_data.discord_info:
+    for k in dict(my_data.discord_info):
         if my_data.discord_info[k]["att_server_id"] == server_id:
             await my_data.client.get_guild(my_data.discord_info[k]["guild_id"]).get_channel(my_data.discord_info[k]["playerkilled_channel"]).send(f"```{username} was killed by {reason}```")
 
@@ -82,7 +82,7 @@ async def on_playermove(data):                      #This function is called eve
     new_chunk =  data["data"]["newChunk"]
     username = data["data"]["player"]["username"]
     server_id = data["server_id"]
-    for k in my_data.discord_info:
+    for k in dict(my_data.discord_info):
         if my_data.discord_info[k]["att_server_id"] == server_id:
             if username not in my_data.player_chunk_timer:
                 my_data.player_chunk_timer[username] = datetime.datetime.now() - datetime.timedelta(seconds=1)
@@ -124,12 +124,12 @@ async def on_ready(): #When the discord bot is fully ready
             await bot.request_accept_invite(x['id'])  # Accept the invites indiscriminately
         await bot.main_sub(f"subscription/me-group-invite-create/{bot.user_id}", on_invited)   #subscribe to getting invites to groups (This lasts forever)
         print("Creating connections to all server consoles")
-        for k in my_data.discord_info:
+        for k in dict(my_data.discord_info):
             await bot.create_console(my_data.discord_info[k]["att_server_id"])
             print("loop")
         await asyncio.sleep(10) #Ensure all consoles have time to open
         print("Subscribing to events on all server consoles")
-        for k in my_data.discord_info:
+        for k in dict(my_data.discord_info):
             try:
                 await asyncio.sleep(.1) #This is placed to prevent super fast spam to the server
                 await bot.console_sub("PlayerKilled", on_playerkilled, my_data.discord_info[k]["att_server_id"])
