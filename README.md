@@ -167,12 +167,13 @@ request functions return dictionary responses and can be used with asyncio's `aw
 
 These functions can be called using asyncio's `await`
 
-`bot.create_console(server_id, timeout=10, body='{"should_launch":"false","ignore_offline":"false"}')`
+`bot.create_console(server_id, ensure_open=False, timeout=10, body='{"should_launch":"false","ignore_offline":"false"}')`
 > This function will create a websocket connection to a server's console in the background. When the server closes, the connection is killed. 
 However this function will automatically connect back when the server starts up again. Currently only returns None.
 ```
     Parameters:
         •server_id - the ID number of your server. Int object.
+        •ensure_open (optional!) - make sure the console connection is open before continuing. This throws an error after the timeout if server is offline. Bool object.
         •timeout (optional!) - the max number in seconds to wait for a successful connection before throwing an Exception. default: 10. Int object.
         •body (optional!) - default: '{"should_launch":"false","ignore_offline":"false"}' String object.
     Example return:
@@ -303,6 +304,7 @@ py_tale.ConsoleCreateFailedException        # used when getting a generic error 
 py_tale.FunctionDisabledException           # used when trying to call a disabled function
 py_tale.WrongArgumentTypeException          # used when you pass an incorrect argument object type to a function
 py_tale.WrongArgumentFormatException        # used when you pass an argument that's in the wrong format
+py_tale.ConsolePermissionsDenied            # used when you lack permissions to use a console
 ```
 Current list of known subscriptions for server consoles: (Use these in console_sub/console_unsub)
 ```
