@@ -1,6 +1,8 @@
 import asyncio, datetime, json
 from discord import Intents
 from discord.ext import commands    # discord.py will no longer be maintained. I recommend looking into disnake: https://github.com/DisnakeDev/disnake
+
+import py_tale
 from py_tale import Py_Tale
 
 class Vars:                 #This creates variables we can use anywhere
@@ -107,7 +109,10 @@ async def on_message(message):
             my_data.discord_info = my_data.discord_info | json_dict
         with open('discord_info.json', 'w', encoding='utf-8') as f:
             json.dump(my_data.discord_info, f, ensure_ascii=False, indent=4)
-        await message.channel.send("Added server to discord_info.json")
+        dict_key = list(json_dict.keys())[0]
+        server_id = int(json_dict[dict_key]["att_server_id"])
+        await bot.create_console(server_id)
+        await message.channel.send("Added server to discord_info.json and created connection")
 
 
 @my_data.client.event
@@ -117,7 +122,7 @@ async def on_ready():               #When the discord bot is fully ready
         print("Discord bot logged in and ready.")
         print("Starting ATT bot")
         asyncio.create_task(bot.run())                  # Start the bot
-        await bot.wait_for_ws()                         # Make sure we wait for the main websocket to start. 
+        await bot.wait_for_ws()                         # Make sure we wait for the main websocket to start.
         invites = await bot.request_invites()           # Get all of our invites to servers on startup
         print("Accepting outstanding invites")
         for x in invites:
@@ -127,8 +132,8 @@ async def on_ready():               #When the discord bot is fully ready
         for k in dict(my_data.discord_info):
             try:
                 await bot.create_console(my_data.discord_info[k]["att_server_id"])
-            except Exception as e:
-                print("Failed to create console with the following error:\n", e)
+            except py_tale.ConsolePermissionsDenied as e:
+                print("Failed to create console. I'm lacking permission! Ignoring exception:\n", e)
         print("Subscribing to events on all server consoles")
         for k in dict(my_data.discord_info):    #loop through a instanced copy of my_data.discord_info. To make sure we don't change size during iteration.
             try:
