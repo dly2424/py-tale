@@ -34,6 +34,10 @@ class ConsoleCreateFailedException(Error):
     """Exception for when create_console fails for an unknown reason"""
     pass
 
+class ConsolePermissionsDenied(Error):
+    """Exception for when console info fails due to a lack of permission (or if ID is wrong!)"""
+    pass
+
 class FunctionDisabledException(Error):
     """Exception for trying to use an intentionally disabled function"""
     pass
@@ -87,7 +91,6 @@ class Py_Tale:
                 await websocket.send(token)
                 if self.debug:
                     print(Fore.CYAN + str(datetime.now()).split(".")[0], "||", f"[SENT] (console {server_id} websocket)> {token}", end=Style.RESET_ALL + "\n")  # end = Style.RESET_ALL prevents other prints from containing the set color
-                if self.debug:
                     print(str(datetime.now()).split(".")[0], "||", f"Console websocket for server {server_id} started!")
                 token_response = await websocket.recv()
                 token_response = json.loads(token_response)
@@ -134,13 +137,15 @@ class Py_Tale:
                     print(str(datetime.now()).split(".")[0], "||", f"Group: {parsed['group_id']} with server ID: {parsed['id']}: server has started")
                 asyncio.create_task(self.create_console(server_id))
 
-    async def create_console(self, server_id, timeout=10, body='{"should_launch":"false","ignore_offline":"false"}'): # Uses SERVER id. - verified
+    async def create_console(self, server_id, ensure_open=False, timeout=10, body='{"should_launch":"false","ignore_offline":"false"}'): # Uses SERVER id. - verified
         try:
             timeout = timeout*100 #convert the seconds into the int we use to check time
             server_id = int(server_id)
             if server_id in self.console_websockets:
                 raise ConsoleAlreadyCreatedException(f"Console {server_id} is already opened. Cannot create a new console for this server.")
             console_res = requests.post(f"https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/servers/{server_id}/console", headers=self.ws_headers, data=body)
+            if console_res.status_code != 200:
+                raise ConsolePermissionsDenied("Lacking permission to use this console. Is it the right ID? Are you a moderator or owner?")
             console_res = console_res.content.decode('utf-8')
             console_res = json.loads(console_res)
             if console_res["allowed"]:
@@ -164,12 +169,12 @@ class Py_Tale:
                 await self.main_sub(f"subscription/group-server-status/{group_id}", self.ensure_console)
         except Exception as e:
             raise ConsoleCreateFailedException(f"Failed to create console for server {server_id}. Ensure your bot is a moderator member of the ATT server. Error:\n {e}")
-        while server_id not in self.console_websockets:
+        while server_id not in self.console_websockets and ensure_open:
             await asyncio.sleep(.01)
             timeout -= 1
             if timeout <= 0:
                 print(self.console_websockets)
-                raise ConsoleTimeoutException(f"Failed to create console for {server_id}")
+                raise ConsoleTimeoutException(f"Failed to create console for {server_id}. I'll start it when the server goes up.")
         return
 
     async def get_console_subs(self):
@@ -263,6 +268,8 @@ class Py_Tale:
     async def request_post_console(self, server_id, body='{"should_launch":"false","ignore_offline":"false"}'): # Uses SERVER id. - verified
         await self.wait_for_ready()
         console_res = requests.post(f"https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/servers/{server_id}/console", headers=self.ws_headers, data=body)
+        if console_res.status_code != 200:
+            raise ConsolePermissionsDenied("Lacking permission to use this console. Is it the right ID?")
         console_res = console_res.content.decode('utf-8')
         console_res = json.loads(console_res)
         return console_res
