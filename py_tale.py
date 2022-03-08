@@ -438,40 +438,64 @@ class Py_Tale:
             async with websockets.connect(self.websocket_url, extra_headers=self.ws_headers, open_timeout=100) as websocket:
                 self.ws_connected = True
                 if not self.migrate:
+                    self.ws = websocket
                     print(str(datetime.now()).split(".")[0], "||", "Main websocket started!") ###############
                     if len(self.main_subscriptions) > 0:
                         for iterate in self.main_subscriptions:
-                            fullname = iterate["fullname"]
+                            fullname = self.main_subscriptions[iterate]["fullname"]
                             i = self.increment()
                             to_send = f'{{"id": {i}, "method": "POST", "path": "{fullname}", "authorization": "{self.ws_headers["Authorization"]}"}}'
                             await websocket.send(to_send)
                             if self.debug:
                                 print(Fore.CYAN + str(datetime.now()).split(".")[0], "||", f"[SENT] (main websocket)> {to_send}", end=Style.RESET_ALL + "\n")  # end = Style.RESET_ALL prevents other prints from containing the set color
-                self.ws = websocket                 ################
-                if self.migrate:
+                elif self.migrate:
                     self.migrate = False
+                    if self.migrate_token == None:  #This if section prevents a rare bug where the migration token is not yet received before migration happens.
+                        timeout = 10                #timeout in seconds
+                        timeout = timeout*10        #timeout converted to int we use for while loop
+                        if self.debug:
+                            print(Fore.RED + "Migration token not received yet! Activating counter-measures...", end=Style.RESET_ALL + "\n")
+                        while self.migrate_token == None and timeout > 0:
+                            await asyncio.sleep(.1)
+                            timeout -= 1
+                        if self.migrate_token == None:
+                            if self.debug:
+                                print(Fore.RED + "Looks like the migration token can't be received. Using locally stored variable as backup! All subscriptions should be restored.", end=Style.RESET_ALL + "\n")
+                            for iterate in self.main_subscriptions:
+                                fullname = self.main_subscriptions[iterate]["fullname"]
+                                i = self.increment()
+                                to_send = f'{{"id": {i}, "method": "POST", "path": "{fullname}", "authorization": "{self.ws_headers["Authorization"]}"}}'
+                                await websocket.send(to_send)
+                                if self.debug:
+                                    print(Fore.CYAN + str(datetime.now()).split(".")[0], "||", f"[SENT] (main websocket)> {to_send}", end=Style.RESET_ALL + "\n")  # end = Style.RESET_ALL prevents other prints from containing the set color
+                        else:
+                            if self.debug:
+                                print(Fore.RED + "Migration token received. Continuing!", end=Style.RESET_ALL + "\n")
                     data = str({"id": self.increment(), "method": "POST", "path": "migrate", "content": self.migrate_token, "authorization": f"{self.ws_headers['Authorization']}"})
                     if self.debug:
                         print(str(datetime.now()).split(".")[0], "||", "migrated")
-                    await websocket.send(data) #This is incorrect: [RECEIVED] (main websocket)< {'message': 'Internal server error', 'connectionId': 'OLdqff5iSwMAc9A=', 'requestId': 'OLdqkFOoywMFkbw='}
+                    await websocket.send(data)
+                    self.ws = websocket
                     if self.debug:
                         print(Fore.CYAN + str(datetime.now()).split(".")[0], "||", f"[SENT] (main websocket)> {data}", end=Style.RESET_ALL + "\n")  # end = Style.RESET_ALL prevents other prints from containing the set color
                 while True:
                     try:
                         var = await websocket.recv()
-                        var = json.loads(var)
+                        var = json.loads(var)                               #Implement unsubscribing on old websocket? Maybe next verison, I don't think it's an issue.
                         if "key" in var:
                             if var["key"] == "GET /ws/migrate":
                                 self.migrate_token = var["content"]
-                        if "id" in var and "event" in var:
-                            if var["event"] == "response" and int(var["id"]) in self.websocket_responses:
-                                self.websocket_responses[int(var["id"])] = var
-                            if var["event"] in self.main_subscriptions:
-                                for function in self.main_subscriptions[var["event"]]["callbacks"]:
-                                    asyncio.create_task(function(var))
-                        if self.debug:
-                            print(Fore.GREEN + str(datetime.now()).split(".")[0], "||", f"[RECEIVED] (main websocket)< {var}", end=Style.RESET_ALL + "\n")
+                        if self.ws is websocket:                    #Only listen to subscriptions if the websocket is the latest websocket. Safety check for preventing double subscriptions if migrate fails while two websockets are open.
+                            if "id" in var and "event" in var:
+                                if var["event"] == "response" and int(var["id"]) in self.websocket_responses:
+                                    self.websocket_responses[int(var["id"])] = var
+                                if var["event"] in self.main_subscriptions:
+                                    for function in self.main_subscriptions[var["event"]]["callbacks"]:
+                                        asyncio.create_task(function(var))
+                            if self.debug:
+                                print(Fore.GREEN + str(datetime.now()).split(".")[0], "||", f"[RECEIVED] (main websocket)< {var}", end=Style.RESET_ALL + "\n")
                         if datetime.now() >= self.expire_time and create:
+                            self.migrate_token = None
                             await self.ws_send({"id": self.increment(), "method": "GET", "path": "migrate", "authorization": f"{self.ws_headers['Authorization']}"})
                             create = False
                             self.migrate = True
