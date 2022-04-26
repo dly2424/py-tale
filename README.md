@@ -1,10 +1,9 @@
 # Py_tale
 ## A library for developing ATT bots in Python.
 
-This library is designed to be fully async. This means it is fully compatible with Discord's python library [discord.py](https://discordpy.readthedocs.io/en/latest/api.html).
-Extra documentation for Alta's endpoints and websockets can be found in the /Alta_Docs folder. (coming soon!)
+This library is designed to be fully async. This means it is fully compatible with Discord's python library [discord.py](https://discordpy.readthedocs.io/en/latest/api.html) and it's forks.
 
-Make sure to take a look into the /Examples folder! I'm still updating and adding examples. Currently they're unrefined projects that only demonstrate some of the library's capabilities. I'll be writing more comprehensive examples within the next few days!
+Make sure to take a look into the /Examples folder! I'm still updating and adding examples. Currently they're unrefined projects that only demonstrate some of the library's capabilities.
 #
 #
 # The goal
