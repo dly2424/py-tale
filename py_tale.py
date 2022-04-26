@@ -484,7 +484,14 @@ class Py_Tale:
                         var = json.loads(var)                               #Implement unsubscribing on old websocket? Maybe next verison, I don't think it's an issue.
                         if "key" in var:
                             if var["key"] == "GET /ws/migrate":
-                                self.migrate_token = var["content"]
+                                try:
+                                    if int(var["responseCode"]) == 200:
+                                        self.migrate_token = var["content"]
+                                    else:
+                                        print(Fore.RED + "Error in migrate response: Ignoring new key. I will perform a manual migrate instead. (non-200 response code)", end=Style.RESET_ALL + "\n")
+                                except Exception as e:
+                                    if self.debug:
+                                        print(Fore.RED + f"Error in migrate response: Ignoring new key. I will perform a manual migrate instead. ({e})", end=Style.RESET_ALL + "\n")
                         if self.ws is websocket:                    #Only listen to subscriptions if the websocket is the latest websocket. Safety check for preventing double subscriptions if migrate fails while two websockets are open.
                             if "id" in var and "event" in var:
                                 if var["event"] == "response" and int(var["id"]) in self.websocket_responses:
