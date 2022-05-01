@@ -1,5 +1,5 @@
 from py_tale import Py_Tale
-import asyncio
+import asyncio, json
 
 
 bot = Py_Tale()
