@@ -395,6 +395,7 @@ class Py_Tale:
             await self.wait_for_ready()
             body = '{"username":"' + username + '"}'
             result = requests.post("https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/users/search/username", headers=self.user_headers, data=body)
+            result = json.loads(result.content)
             return result
         else:
             raise FunctionDisabledException("request_search_name currently does not work for bot accounts. You'll need to add a user login to the config function.")
