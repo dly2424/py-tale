@@ -1,7 +1,7 @@
 # This is the py-tale library, writen by dly2424. For help, inquire at https://discord.gg/GNpmEN2 (The ATT meta discord, a place for bot/dev stuff)
 # Please consult the GitHub repository for full documentation, explanation and examples: https://github.com/dly2424/py-tale
 try:
-    import requests, websockets, asyncio, json, traceback
+    import requests, websockets, asyncio, json, traceback, hashlib
     from datetime import datetime, timedelta
     from colorama import Fore, Style, init  # Colorama is a library for coloring console output. Not mandatory, but looks pretty.
 except Exception as e:
@@ -59,6 +59,7 @@ class Py_Tale:
         self.console_subscriptions = {}
         self.main_subscriptions = {}
         self.cred_initialized = False
+        self.user_initialized = False
         self.ws_connected = False
         self.debug = False
         self.id = 0
@@ -71,13 +72,19 @@ class Py_Tale:
         self.client_id = ''
         self.client_secret = ''
         self.scope_string = ''  # scopes should be: ws.group ws.group_members ws.group_servers ws.group_bans ws.group_invites group.info group.join group.leave group.view group.members group.invite server.view server.console
+        self.user_name = None
+        self.user_password = None
         self.access_token = ''
+        self.user_token = ''
         self.expires_in = None
         self.expire_time = None
         self.migrate = False
         self.migrate_token = None
         self.jsonResponse = {}
         self.ws_headers = {}
+        self.user_headers = {}
+        self.user_name = None
+        self.user_password = None
         self.data = {
             'grant_type': 'client_credentials',
             'scope': self.scope_string,
@@ -106,6 +113,7 @@ class Py_Tale:
                                 print(Fore.CYAN + str(datetime.now()).split(".")[0], "||", f"[SENT] (console {server_id} websocket)> {to_send}", end=Style.RESET_ALL + "\n")  # end = Style.RESET_ALL prevents other prints from containing the set color
                 while True:
                     var = await websocket.recv()
+                    print(Fore.YELLOW + "!var: " + str(var), end=Style.RESET_ALL + "\n")
                     var = json.loads(var)
                     if var["type"] == "CommandResult":
                         self.websocket_responses[int(var["commandId"])] = var
@@ -124,7 +132,7 @@ class Py_Tale:
         except Exception as e:
             print(Fore.RED + str(datetime.now()).split(".")[0], "||", f"Server console {server_id} failed. Error details listed below:\n", e, end=Style.RESET_ALL + "\n")
             print(Fore.RED + str(datetime.now()).split(".")[0], "||", "The server likely shutdown. I'll try to start the console again when the server is back up!", end=Style.RESET_ALL + "\n")
-            #print(traceback.print_exc())
+            print(Fore.YELLOW + str(traceback.print_exc()), end=Style.RESET_ALL + "\n")
             if server_id in self.console_websockets:
                 del self.console_websockets[server_id]
 
@@ -265,6 +273,29 @@ class Py_Tale:
         self.expires_in = int(self.jsonResponse['expires_in'])
         self.expire_time = datetime.now() + timedelta(seconds=self.expires_in-(60*10))
 
+    async def request_user_token(self):  # Function that gets token info for our websocket. Also gets a new token before the current one expires. (migrates websocket)
+        try:
+            self.user_headers = {}
+            if self.debug:
+                print(str(datetime.now()).split(".")[0], "||", "Obtaining new user credentials!")
+            headers = {"Content-Type": "application/json", "x-api-key": "2l6aQGoNes8EHb94qMhqQ5m2iaiOM9666oDTPORf", "User-Agent": self.client_id, "Accept": "*/*", "Accept-Encoding": "gzip, deflate, br", "Connection": "keep-alive"}
+            if len(self.user_password) != 128:
+                passhash = hashlib.sha512(self.user_password.encode("UTF-8")).hexdigest()
+            else:
+                passhash = self.user_password
+            body = str({"username":self.user_name, "password_hash":passhash})
+            response = requests.post("https://webapi.townshiptale.com/api/sessions", headers=headers, data=body)
+            json_response = response.json()
+            self.user_token = json_response['access_token']
+            self.user_headers["Content-Type"] = "application/json"
+            self.user_headers["x-api-key"] = "2l6aQGoNes8EHb94qMhqQ5m2iaiOM9666oDTPORf"
+            self.user_headers["User-Agent"] = self.client_id
+            self.user_headers["Authorization"] = f"Bearer {self.user_token}"
+            self.user_initialized = True
+        except Exception as e:
+            print(Fore.RED + str(datetime.now()).split(".")[0], "||", "Failed to get user credentials, are your username and password correct?\n", e, end=Style.RESET_ALL + "\n")
+            exit()
+
     async def request_post_console(self, server_id, body='{"should_launch":"false","ignore_offline":"false"}'): # Uses SERVER id. - verified
         await self.wait_for_ready()
         console_res = requests.post(f"https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/servers/{server_id}/console", headers=self.ws_headers, data=body)
@@ -359,12 +390,15 @@ class Py_Tale:
         invites_list = json.loads(invites_list)
         return invites_list
 
-    async def request_search_name(self, username): # Bots can't do this apparently...
-        raise FunctionDisabledException("request_search_name currently does not work. It's not possible for bot accounts to do this.")
-        await self.wait_for_ready()
-        body = '{"username":"' + username + '"}'
-        result = requests.post("https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/users/search/username", headers=self.ws_headers)
-        return result
+    async def request_search_username(self, username): # Bots can't do this apparently... (but users can!)
+        if self.user_initialized:
+            await self.wait_for_ready()
+            body = '{"username":"' + username + '"}'
+            result = requests.post("https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/users/search/username", headers=self.user_headers, data=body)
+            return result
+        else:
+            raise FunctionDisabledException("request_search_name currently does not work for bot accounts. You'll need to add a user login to the config function.")
+
 
     async def request_consoles(self):
         await self.wait_for_ready()
@@ -484,14 +518,7 @@ class Py_Tale:
                         var = json.loads(var)                               #Implement unsubscribing on old websocket? Maybe next verison, I don't think it's an issue.
                         if "key" in var:
                             if var["key"] == "GET /ws/migrate":
-                                try:
-                                    if int(var["responseCode"]) == 200:
-                                        self.migrate_token = var["content"]
-                                    else:
-                                        print(Fore.RED + "Error in migrate response: Ignoring new key. I will perform a manual migrate instead. (non-200 response code)", end=Style.RESET_ALL + "\n")
-                                except Exception as e:
-                                    if self.debug:
-                                        print(Fore.RED + f"Error in migrate response: Ignoring new key. I will perform a manual migrate instead. ({e})", end=Style.RESET_ALL + "\n")
+                                self.migrate_token = var["content"]
                         if self.ws is websocket:                    #Only listen to subscriptions if the websocket is the latest websocket. Safety check for preventing double subscriptions if migrate fails while two websockets are open.
                             if "id" in var and "event" in var:
                                 if var["event"] == "response" and int(var["id"]) in self.websocket_responses:
@@ -507,6 +534,8 @@ class Py_Tale:
                             create = False
                             self.migrate = True
                             await self.request_temp_token()
+                            if self.user_initialized:
+                                await self.request_user_token()
                             if self.debug:
                                 print(str(datetime.now()).split(".")[0], "||", "migrating...")
                             asyncio.create_task(self.run_ws())
@@ -527,7 +556,9 @@ class Py_Tale:
             asyncio.create_task(self.run_ws())
             return
 
-    def config(self, client_id, client_secret, scope_string, user_id, debug=False):
+    def config(self, client_id, client_secret, scope_string, user_id, debug=False, user_name=None, user_password=None):
+        self.user_name = user_name
+        self.user_password = user_password
         self.client_id = client_id
         self.client_secret = client_secret
         self.scope_string = scope_string
@@ -539,6 +570,8 @@ class Py_Tale:
             'client_id': self.client_id,
             'client_secret': self.client_secret
         }
+        if len(user_password) != 128: # Lazy way of checking if passed password is a hash or plain text.
+            print(Fore.RED + "Warning! It is recommended to use a sha512 hash of your password, rather than plain text.\nContinuing as normal...", end=Style.RESET_ALL + "\n")
 
     async def ping_websocket(self):  # Function to periodically ping the websocket to keep connection alive.
         try:
@@ -554,8 +587,12 @@ class Py_Tale:
             await self.ping_websocket()
 
     async def wait_for_ready(self):
-        while not self.cred_initialized:
-            await asyncio.sleep(1)
+        if self.user_name == None and self.user_password == None:
+            while not self.cred_initialized:
+                await asyncio.sleep(1)
+        else:
+            while not self.cred_initialized and not self.user_initialized:
+                await asyncio.sleep(1)
 
     async def wait_for_ws(self):
         while not self.ws_connected:
@@ -574,6 +611,14 @@ class Py_Tale:
         except:
             traceback.print_exc()
             print(Fore.RED + str(datetime.now()).split(".")[0], "||", "Failed at task request_temp_token() in Py_tale.", end=Style.RESET_ALL + "\n")
+            exit()
+
+        try:
+            if self.user_name != None and self.user_password != None:
+                asyncio.create_task(self.request_user_token())
+        except:
+            traceback.print_exc()
+            print(Fore.RED + str(datetime.now()).split(".")[0], "||", "Failed at task request_user_token() in Py_tale.", end=Style.RESET_ALL + "\n")
             exit()
 
         await self.wait_for_ws()
