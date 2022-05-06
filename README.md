@@ -47,7 +47,9 @@ bot.config(client_id='client_sdv98798-vw3r314-afd1-69420smd',
            user_id=89273545,
            scope_string=my_scopes,
            client_secret='IuIB9876adHUWIBIBu89auiBIBu9yw8998w89yd==',
-           debug=False) # Debug is optional. Only use True if you'd like to see data being sent to and from Alta's endpoints!
+           user_name = "jimmythetrain",               # Username is optional, this is your Alta account login. Used for some features.
+           user_password = "examplepassword1234",     # Also optional. Needed if you specify a user_name. (recommended to use a sha512 hash of this password rather than plain-text!)
+           debug=False)                               # Debug is optional. Only use True if you'd like to see data being sent to and from Alta's endpoints!
 ```
 From here on out you're ready to start the bot! We can start it with `await bot.run()` or in the background with `asyncio.create_task(bot.run())`
 #
