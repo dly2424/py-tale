@@ -162,6 +162,16 @@ request functions return dictionary responses and can be used with asyncio's `aw
     Example return:
         [{'id': 7861354864, 'name': "Dlys awesome server", 'online_players': [], 'server_status': 'Online', 'final_status': 'Online', 'scene_index': 0, 'target': 1, 'region': 'north-america-agones', 'last_online': '2022-02-27T22:04:24.5444317Z', 'description': "Dlys private server.", 'playability': 0.0, 'version': 'main-0.0.79.7', 'group_id': 1325436654, 'owner_type': 'Group', 'owner_id': 201453432, 'type': 'Normal', 'fleet': 'att-release', 'up_time': '7.09:36:59.0452399'}]
 ```
+#
+#
+`bot.request_search_username(username)`
+> Used to resolve the ID of an Alta account from a username. Note: User account required!
+```
+    Parameters:
+        •username - The username to lookup. String object.
+    Example return:
+        {'id': 98327498, 'username': 'jimmythetrain'}
+```
 # Other functions
 
 These functions can be called using asyncio's `await`
@@ -234,15 +244,17 @@ Currently only returns None.
 ```
 #
 #
-`bot.config(client_id, client_secret, scope_string, user_id, debug=False)`
+`bot.config(client_id, client_secret, scope_string, user_id, debug=False, user_name=None, user_password=None):`
 > This function sets your credentials for the program. 
 ```
     Parameters:
         •client_id - Your client ID sent to you by Joel. String object
         •client_secret - Your client secret sent to you by Joel. String object
-        •scope_string - Your scopes sent to you by Joel. Should be a long string with scopes separated by spaces String object
+        •scope_string - Your scopes sent to you by Joel. Should be a long string with scopes separated by spaces. String object
         •user_id - Your user ID sent to you by Joel. Int object
         •debug (optional!) - Setting this to True will enable colored printing to console of all data being sent and received by websockets and endpoints. Bool object
+        •user_name (optional!) - Setting this along side your user_password will allow you to login to a user account which enables some features that bot accounts normally can't use. String object
+        •user_password (optional!) - Use this along side your user_name to login to an Alta user account. This can be plain-text or a sha512 hash. String object
     Example return:
         None
 ```
