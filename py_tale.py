@@ -83,8 +83,6 @@ class Py_Tale:
         self.jsonResponse = {}
         self.ws_headers = {}
         self.user_headers = {}
-        self.user_name = None
-        self.user_password = None
         self.data = {
             'grant_type': 'client_credentials',
             'scope': self.scope_string,
@@ -113,8 +111,10 @@ class Py_Tale:
                                 print(Fore.CYAN + str(datetime.now()).split(".")[0], "||", f"[SENT] (console {server_id} websocket)> {to_send}", end=Style.RESET_ALL + "\n")  # end = Style.RESET_ALL prevents other prints from containing the set color
                 while True:
                     var = await websocket.recv()
-                    print(Fore.YELLOW + "!var: " + str(var), end=Style.RESET_ALL + "\n")
                     var = json.loads(var)
+                    if "data" in var.keys():
+                        if "message" in var["data"]:
+                            var["data"]["message"] = var["data"]["message"] # Leaving this here in case I wanna change stuff about it, really does nothing rn
                     if var["type"] == "CommandResult":
                         self.websocket_responses[int(var["commandId"])] = var
                         if self.debug:
@@ -123,7 +123,8 @@ class Py_Tale:
                     if server_id in self.console_subscriptions:
                         if var["eventType"] in self.console_subscriptions[server_id]:
                             for function in self.console_subscriptions[server_id][var["eventType"]]:
-                                content = json.loads(f"{{'server_id':{server_id},{str(var)[1:]}".replace("'", '"')) # Returns SERVER id, not GROUP id
+                                print(f"{{'server_id':{server_id}, {json.dumps(var)[1:]}".replace("'", '"'))
+                                content = json.loads(f"{{'server_id':{server_id},{json.dumps(var)[1:]}".replace("'", '"')) # Returns SERVER id, not GROUP id
                                 asyncio.create_task(function(content))  # call each function and pass the data.
                         if self.debug:
                             print(Fore.GREEN + str(datetime.now()).split(".")[0], "||", f"[RECEIVED] (console {server_id} websocket)< {var}", end=Style.RESET_ALL + "\n")
