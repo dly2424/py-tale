@@ -81,12 +81,33 @@ request functions return dictionary responses and can be used with asyncio's `aw
 #
 #
 `bot.request_server_by_id(server_id)`
-> Used for gathering info about a server.
+> Used for gathering info about a server via server ID.
 ```
     Parameters:
         •server_id - the ID number of your server. Int or String object.
     Example return:
         {'id': 93247934798, 'name': "Dlys awesome server", 'online_players': [], 'server_status': 'Online', 'final_status': 'Online', 'scene_index': 0, 'target': 1, 'region': 'north-america-agones', 'last_online': '2022-02-27T22:04:24.5444317Z', 'description': "Dlys private server.", 'playability': 0.0, 'version': 'main-0.0.79.7', 'group_id': 89586948, 'owner_type': 'Group', 'owner_id': 201274988, 'type': 'Normal', 'fleet': 'att-release', 'up_time': '7.09:36:59.0452399'}
+```
+#
+#
+`bot.request_server_by_name(server_name)`
+> Used for gathering info about a server via server name. - Note: This one returns a list of dictionaries, as multiple servers can have the same name!
+```
+    Parameters:
+        •server_name - the name of your server. String object.
+    Example return:
+        [{'id': 345654377, 'name': 'jimmys server', 'online_players': [], 'server_status': 'Online', 'final_status': 'Offline', 'scene_index': 0, 'target': 1, 'region': 'north-america-agones', 'last_online': '2022-05-15T14:55:54.0527322Z', 'description': 'A server for jimmy and their friends', 'playability': 0.0, 'version': 'main-0.1.2.4', 'group_id': 3454635756, 'owner_type': 'Group', 'owner_id': 255434345, 'type': 'Normal', 'fleet': 'att-release', 'up_time': '00:46:31.9191574'}]
+```
+#
+#
+`bot.request_group_by_id(group_id)`
+> Used to get info about a group via it's ID
+```
+    Parameters:
+        •group_id - the ID number of your group. Int or String object.
+    Example return:
+        [{'id': 34564575, 'name': 'jimmys server', 'online_players': [], 'server_status': 'Online', 'final_status': 'Offline', 'scene_index': 0, 'target': 1, 'region': 'north-america-agones', 'last_online': '2022-05-15T14:55:54.0527322Z', 'description': 'A server for jimmy and their friends', 'playability': 0.0, 'version': 'main-0.1.2.4', 'group_id': 2346436756, 'owner_type': 'Group', 'owner_id': 86453456, 'type': 'Normal', 'fleet': 'att-release', 'up_time': '00:46:31.9191574'}]
+
 ```
 #
 #
@@ -140,6 +161,50 @@ request functions return dictionary responses and can be used with asyncio's `aw
 ```
 #
 #
+`bot.request_pending_requests(group_id)`
+> Used to get all the pending invite requests to a server (A request from a user to join a server) - Note: This does not return outgoing invites from the server to a user. Only incoming requests to join.
+```
+    Parameters:
+        •group_id - the ID number of your group. Int or String object.
+    Example return:
+        [{'group_id': 798043507, 'user_id': 24434354, 'username': 'jimmythetrain', 'bot': False, 'icon': 0, 'permissions': 'Member', 'role_id': 1, 'created_at': '2022-05-15T19:36:30.82Z', 'type': 'RequestedJoin'}]
+
+```
+#
+#
+`bot.request_member_info(group_id, player_id)`
+> Used to get info about a member from a group.
+```
+    Parameters:
+        •group_id - the ID number of your group. Int or String object.
+        •player_id - the ID number of the player to get info about. Int or String object
+    Example return:
+        {'group_id': 54456434, 'user_id': 357346778, 'username': 'jimmythetrain', 'bot': False, 'icon': 0, 'permissions': 'Member, Moderator, Admin', 'role_id': 7, 'created_at': '2021-06-14T23:48:30.393Z', 'type': 'Accepted'}
+```
+#
+#
+`bot.request_check_pending_invites(group_id)`
+> Used to get all outgoing invites from the server to users. - Note: This does not return incoming requests to join the server from a user. Returns a list of dictionaries
+```
+    Parameters:
+        •group_id - the ID number of your group. Int or String object.
+    Example return:
+        [{'group_id': 2087854345, 'user_id': 200814839, 'username': 'Caterina', 'bot': False, 'icon': 0, 'permissions': 'Member', 'role_id': 1, 'created_at': '2022-05-15T19:40:40.739Z', 'type': 'Invited'}]
+```
+#
+#
+`bot.request_check_user_role(group_id, player_id, role_int)`
+> Used to check whether or not a user has the specified role. - Note: Will also return true if the player has a higher than specified role.
+```
+    Parameters:
+        •group_id - the ID number of your group. Int or String object.
+        •player_id - the ID number of the player you want to check. Int or String object.
+        •role_int - the ID number of the role you want to check if they have. Int or String object - Note: 1 is member, 2 is moderator and 7 is owner.
+    Example return:
+        {'value': True}
+```
+#
+#
 `bot.request_members(group_id)`
 > Used to get members of a server - Note: This one returns a list of dictionaries!
 ```
@@ -173,6 +238,26 @@ request functions return dictionary responses and can be used with asyncio's `aw
         •username - The username to lookup. String object.
     Example return:
         {'id': 98327498, 'username': 'jimmythetrain'}
+```
+#
+#
+`bot.request_search_userid(player_id)`
+> Used to resolve the username of an Alta account from an ID. Note: User account required!
+```
+    Parameters:
+        •player_id - The ID to lookup. Int or String object.
+    Example return:
+        {'id': 98327498, 'username': 'jimmythetrain'}
+```
+#
+#
+`bot.request_group_bans(group_id)`
+> Used to list the banned members of the group.
+```
+    Parameters:
+        •group_id - the ID number of your group. Int or String object.
+    Example return:
+        [{'group_id': 657354353, 'user_id': 4576854534, 'username': 'jerkfacemgee', 'bot': False, 'icon': 0, 'permissions': 0, 'role_id': 0, 'created_at': '2022-05-15T19:51:06.202Z', 'type': 'Banned'}]
 ```
 # Other functions
 
