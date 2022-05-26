@@ -1,7 +1,7 @@
 # This is the py-tale library, writen by dly2424. For help, inquire at https://discord.gg/GNpmEN2 (The ATT meta discord, a place for bot/dev stuff)
 # Please consult the GitHub repository for full documentation, explanation and examples: https://github.com/dly2424/py-tale
 try:
-    import requests, websockets, asyncio, json, traceback, hashlib, logging
+    import requests, websockets, asyncio, json, traceback, hashlib, logging, copy
     from datetime import datetime, timedelta
     from colorama import Fore, Style, init  # Colorama is a library for coloring console output. Not mandatory, but looks pretty.
     import py_tale_logging as py_tale_logging
@@ -49,6 +49,34 @@ class WrongArgumentTypeException(Error):
 class WrongArgumentFormatException(Error):
     """Exception for using the wrong format with a passed argument to a function's parameter"""
     pass
+
+class Events():
+    REQUESTED = 'REQUESTED'
+    RECEIVED = 'RECEIVED'
+
+class ColorFormatter(logging.Formatter):
+    def __init__(self, fmt):
+        super().__init__()
+        self.fmt = fmt
+        self.LevelsFormatters = {
+            logging.ERROR: Fore.RED + self.fmt + Fore.RESET,
+            logging.CRITICAL: Fore.RED + self.fmt + Fore.RESET
+        }
+        self.EventFormatters = {
+            Events.REQUESTED: Fore.CYAN + self.fmt + Fore.RESET,
+            Events.RECEIVED: Fore.GREEN + self.fmt + Fore.RESET
+        }
+    
+    def format(self, record):
+        formatter = logging.Formatter(self.fmt)
+        copyrecord = copy.copy(record)
+        if hasattr(copyrecord, 'event') and copyrecord.event in self.EventFormatters:
+            formatter = logging.Formatter(self.EventFormatters.get(copyrecord.event))
+        else:
+            copyrecord.event = 'LOGGING'
+        if record.levelno in self.LevelsFormatters:
+            formatter = logging.Formatter(self.LevelsFormatters.get(copyrecord.levelno))
+        return formatter.format(copyrecord)
 
 #Main program
 class Py_Tale:
