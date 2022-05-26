@@ -1,9 +1,11 @@
 # This is the py-tale library, writen by dly2424. For help, inquire at https://discord.gg/GNpmEN2 (The ATT meta discord, a place for bot/dev stuff)
 # Please consult the GitHub repository for full documentation, explanation and examples: https://github.com/dly2424/py-tale
 try:
-    import requests, websockets, asyncio, json, traceback, hashlib
+    import requests, websockets, asyncio, json, traceback, hashlib, logging
     from datetime import datetime, timedelta
     from colorama import Fore, Style, init  # Colorama is a library for coloring console output. Not mandatory, but looks pretty.
+    import py_tale_logging as py_tale_logging
+
 except Exception as e:
     print(e)
     print("You need to install dependencies for py_tale to work. Please install requests, websockets and colorama via pip.")
@@ -12,8 +14,6 @@ except Exception as e:
     print("python -m pip install websockets")
     print("python -m pip install colorama")
     exit()
-
-
 
 init()  # Colorama function call that is required for setting up colors properly.
 
@@ -89,6 +89,12 @@ class Py_Tale:
             'client_id': self.client_id,
             'client_secret': self.client_secret
         }
+        stdout_handler = logging.StreamHandler()
+        stdout_handler.setLevel(logging.DEBUG)
+        stdout_handler.setFormatter(py_tale_logging.ColorFormatter('%(asctime)s | %(event)10s | %(levelname)8s | %(message)s'))
+        logger = logging.Logger(__name__, logging.DEBUG)  # TODO: Configure logging levels, perhaps using standard configuration json
+        logger.addHandler(stdout_handler)
+        self.logger = logger
 
     async def new_console_websocket(self, addr, port, server_id, token): # Uses SERVER id. - verified
         try:
@@ -731,6 +737,7 @@ class Py_Tale:
             await asyncio.sleep(1)
 
     async def run(self):
+        self.logger.info("Creating py_tale background tasks")
         try:
             asyncio.create_task(self.run_ws())
         except:
