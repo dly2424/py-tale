@@ -50,8 +50,9 @@ class WrongArgumentFormatException(Error):
     pass
 
 class Events():
-    REQUESTED = 'REQUESTED'
-    RECEIVED = 'RECEIVED'
+    SENT = 'REQUESTED' #print\(Fore.CYAN \+ str\(datetime.now\(\)\)\.split\("\."\)\[0\], "\|\|", f"\[SENT\](.*)",.*\)
+    RECEIVED = 'RECEIVED' #print\(Fore.CYAN \+ str\(datetime.now\(\)\)\.split\("\."\)\[0\], "\|\|", 
+    MESSAGE = 'MESSAGE' #print\(str\(datetime.now\(\)\)\.split\("\."\)\[0\], "\|\|", 
 
 class ColorFormatter(logging.Formatter):
     def __init__(self, fmt):
@@ -62,7 +63,7 @@ class ColorFormatter(logging.Formatter):
             logging.CRITICAL: Fore.RED + self.fmt + Fore.RESET
         }
         self.EventFormatters = {
-            Events.REQUESTED: Fore.CYAN + self.fmt + Fore.RESET,
+            Events.SENT: Fore.CYAN + self.fmt + Fore.RESET,
             Events.RECEIVED: Fore.GREEN + self.fmt + Fore.RESET
         }
     
@@ -72,7 +73,7 @@ class ColorFormatter(logging.Formatter):
         if hasattr(copyrecord, 'event') and copyrecord.event in self.EventFormatters:
             formatter = logging.Formatter(self.EventFormatters.get(copyrecord.event))
         else:
-            copyrecord.event = 'LOGGING'
+            copyrecord.event = Events.MESSAGE
         if record.levelno in self.LevelsFormatters:
             formatter = logging.Formatter(self.LevelsFormatters.get(copyrecord.levelno))
         return formatter.format(copyrecord)
@@ -118,37 +119,64 @@ class Py_Tale:
         }
         stdout_handler = logging.StreamHandler()
         stdout_handler.setLevel(logging.DEBUG)
-        stdout_handler.setFormatter(py_tale_logging.ColorFormatter('%(asctime)s | %(event)10s | %(levelname)8s | %(message)s'))
+        stdout_handler.setFormatter(ColorFormatter('%(asctime)s||%(levelname)8s||[%(event)9s] %(message)s'))
         logger = logging.Logger(__name__, logging.DEBUG)  # TODO: Configure logging levels, perhaps using standard configuration json
         logger.addHandler(stdout_handler)
-        self.logger = logger
+        self._logger = logger
+
+    def addLoggerHandler(self, handler):
+        self._logger.addHandler(handler)
+
+    def _log(self, level, message, event=Events.MESSAGE):
+        self._logger.log(level, message, extra={'event': event})
+
+    def _log_exception(self, message):
+        self._logger.exception(message, extra={'event': Events.MESSAGE})
+
+    def _log_info(self, message):
+        self._logger.info(message, extra={'event': Events.MESSAGE})
+
+    def _log_error(self, message):
+        self._logger.error(message, extra={'event': Events.MESSAGE})
+
+    def _log_critical(self, message):
+        self._logger.critical(message, extra={'event': Events.MESSAGE})
+
+    def _log_warn(self, message):
+        self._logger.warn(message, extra={'event': Events.MESSAGE})
+
+    def _log_sent(self, message):
+        self._log_info(message, extra={'event': Events.SENT})
+
+    def _log_received(self, message):
+        self._log_info(message, extra={'event': Events.RECEIVED})
 
     async def new_console_websocket(self, addr, port, server_id, token): # Uses SERVER id. - verified
         try:
             async with websockets.connect(f"ws://{addr}:{port}", open_timeout=100) as websocket:  # This is ws protocol not wss
                 await websocket.send(token)
                 if self.debug:
-                    print(Fore.CYAN + str(datetime.now()).split(".")[0], "||", f"[SENT] (console {server_id} websocket)> {token}", end=Style.RESET_ALL + "\n")  # end = Style.RESET_ALL prevents other prints from containing the set color
-                    print(str(datetime.now()).split(".")[0], "||", f"Console websocket for server {server_id} started!")
+                    self._log_sent(f'(console {server_id} websocket)> {token}')
+                    self._log_info(f"Console websocket for server {server_id} started!")
                 token_response = await websocket.recv()
                 token_response = json.loads(token_response)
                 self.console_websockets[server_id] = websocket
                 if self.debug:
-                    print(Fore.GREEN + str(datetime.now()).split(".")[0], "||", f"[RECEIVED] (console {server_id} websocket)< {token_response}", end=Style.RESET_ALL + "\n")
+                    self._log_received(f"(console {server_id} websocket)< {token_response}")
                 if server_id in self.console_subscriptions:
                     if len(self.console_subscriptions[server_id]) > 0:
                         for x in self.console_subscriptions[server_id]:
                             to_send = f'{{"id":{self.increment()},"content":"websocket subscribe {x}"}}'
                             await websocket.send(to_send)
                             if self.debug:
-                                print(Fore.CYAN + str(datetime.now()).split(".")[0], "||", f"[SENT] (console {server_id} websocket)> {to_send}", end=Style.RESET_ALL + "\n")  # end = Style.RESET_ALL prevents other prints from containing the set color
+                                self._log_sent(f"(console {server_id} websocket)> {to_send}")
                 while True:
                     var = await websocket.recv()
                     var = json.loads(var)
                     if var["type"] == "CommandResult":
                         self.websocket_responses[int(var["commandId"])] = var
                         if self.debug:
-                            print(Fore.GREEN + str(datetime.now()).split(".")[0], "||", f"[RECEIVED] (console {server_id} websocket)< {var}", end=Style.RESET_ALL + "\n")
+                            self._log_received(f"(console {server_id} websocket)< {var}")
                         continue
                     if server_id in self.console_subscriptions:
                         if var["eventType"] in self.console_subscriptions[server_id]:
@@ -156,12 +184,13 @@ class Py_Tale:
                                 var["server_id"] = server_id
                                 asyncio.create_task(function(var))  # call each function and pass the data.
                         if self.debug:
-                            print(Fore.GREEN + str(datetime.now()).split(".")[0], "||", f"[RECEIVED] (console {server_id} websocket)< {var}", end=Style.RESET_ALL + "\n")
+                            self._log_received(f"(console {server_id} websocket)< {var}")
                 if self.debug:
-                    print(Fore.RED + str(datetime.now()).split(".")[0], "||", f"Console websocket for server {server_id} closed.", end=Style.RESET_ALL + "\n")  # This should never be called, but just in case.
+                    self._log_error(f"Console websocket for server {server_id} closed.")  # This should never be called, but just in case.
         except Exception as e:
-            print(Fore.RED + str(datetime.now()).split(".")[0], "||", f"Server console {server_id} failed. Error details listed below:\n", e, end=Style.RESET_ALL + "\n")
-            print(Fore.RED + str(datetime.now()).split(".")[0], "||", "The server likely shutdown. I'll try to start the console again when the server is back up!", end=Style.RESET_ALL + "\n")
+            self._log_error(f"Server console {server_id} failed. Error details listed below:\n")
+            self._log_exception(e)
+            self._log_error(f"The server likely shutdown. I'll try to start the console again when the server is back up!")
             if server_id in self.console_websockets:
                 del self.console_websockets[server_id]
 
@@ -171,7 +200,7 @@ class Py_Tale:
             server_id = parsed["id"]
             if server_id not in self.console_websockets:
                 if self.debug:
-                    print(str(datetime.now()).split(".")[0], "||", f"Group: {parsed['group_id']} with server ID: {parsed['id']}: server has started")
+                    self._log_info(f"Group: {parsed['group_id']} with server ID: {parsed['id']}: server has started")
                 asyncio.create_task(self.create_console(server_id))
 
     async def create_console(self, server_id, ensure_open=False, timeout=10, body='{"should_launch":"false","ignore_offline":"false"}'): # Uses SERVER id. - verified
@@ -210,7 +239,7 @@ class Py_Tale:
             await asyncio.sleep(.01)
             timeout -= 1
             if timeout <= 0:
-                print(self.console_websockets)
+                self._log_info(self.console_websockets)
                 raise ConsoleTimeoutException(f"Failed to create console for {server_id}. I'll start it when the server goes up.")
         return
 
@@ -241,7 +270,7 @@ class Py_Tale:
                 content = f'{{"id":{self.increment()},"content":"websocket subscribe {sub}"}}'
                 await v.send(content)
                 if self.debug:
-                    print(Fore.CYAN + str(datetime.now()).split(".")[0], "||", str(datetime.now()).split(".")[0], "||", f"[SENT] (console {k} websocket)> {content}", end=Style.RESET_ALL + "\n")  # end = Style.RESET_ALL prevents other prints from containing the set color
+                    self._log_sent(f" (console {k} websocket)> {content}")
                 if k not in self.console_subscriptions:
                     self.console_subscriptions[k] = {}
                 if sub not in self.console_subscriptions[k]:
@@ -256,7 +285,7 @@ class Py_Tale:
             if server_id in self.console_websockets:
                 await self.console_websockets[server_id].send(content)
                 if self.debug:
-                    print(Fore.CYAN + str(datetime.now()).split(".")[0], "||", f"[SENT] (console {server_id} websocket)> {content}", end=Style.RESET_ALL + "\n")  # end = Style.RESET_ALL prevents other prints from containing the set color
+                    self._log_sent(f"(console {server_id} websocket)> {content}")
             if server_id not in self.console_subscriptions:
                 self.console_subscriptions[server_id] = {}
             if sub not in self.console_subscriptions[server_id]:
@@ -288,7 +317,7 @@ class Py_Tale:
     async def request_temp_token(self):  # Function that gets token info for our websocket. Also gets a new token before the current one expires. (migrates websocket)
         self.ws_headers = {}
         if self.debug:
-            print(str(datetime.now()).split(".")[0], "||", "Obtaining new credentials!")
+            self._log_info("Obtaining new credentials!")
         response = requests.post(self.token_endpoint, data=self.data)   # Here we request an access token using our config data.
         self.jsonResponse = response.json()  # Turn into dict           # We need to do this to get a token for the websocket.
         self.access_token = self.jsonResponse['access_token']
@@ -306,7 +335,7 @@ class Py_Tale:
         try:
             self.user_headers = {}
             if self.debug:
-                print(str(datetime.now()).split(".")[0], "||", "Obtaining new user credentials!")
+                self._log_info("Obtaining new user credentials!")
             headers = {"Content-Type": "application/json", "x-api-key": "2l6aQGoNes8EHb94qMhqQ5m2iaiOM9666oDTPORf", "User-Agent": self.client_id, "Accept": "*/*", "Accept-Encoding": "gzip, deflate, br", "Connection": "keep-alive"}
             if len(self.user_password) != 128:
                 passhash = hashlib.sha512(self.user_password.encode("UTF-8")).hexdigest()
@@ -322,7 +351,8 @@ class Py_Tale:
             self.user_headers["Authorization"] = f"Bearer {self.user_token}"
             self.user_initialized = True
         except Exception as e:
-            print(Fore.RED + str(datetime.now()).split(".")[0], "||", "Failed to get user credentials, are your username and password correct?\n", e, end=Style.RESET_ALL + "\n")
+            self._log_error("Failed to get user credentials, are your username and password correct?")
+            self._log_exception(e)
             exit()
 
     async def request_post_console(self, server_id, body='{"should_launch":"false","ignore_offline":"false"}'): # Uses SERVER id. - verified
@@ -337,7 +367,7 @@ class Py_Tale:
     async def request_ban_player(self, group_id, player_id):
         await self.wait_for_ready()
         ban = requests.post(f"https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/groups/{group_id}/bans/{player_id}", headers=self.ws_headers)
-        print(ban.status_code, ban.content)
+        self._log(f"{ban.status_code}|{ban.content}")
         ban = ban.content.decode('utf-8')
         ban = json.loads(ban)
         return ban
@@ -360,9 +390,9 @@ class Py_Tale:
         return FunctionDisabledException("Looks like devs/mods only have permissions to get discords from players...")
         await self.wait_for_ready()
         user_discord = requests.get(f"https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/Account/discord/{player_id}", headers=self.user_headers)
-        print(user_discord.status_code)
+        self._log_info(user_discord.status_code)
         user_discord = user_discord.content.decode('utf-8')
-        print(user_discord)
+        self._log_info(user_discord)
         user_discord = json.loads(user_discord)
         return user_discord
 
@@ -377,7 +407,7 @@ class Py_Tale:
         return FunctionDisabledException("request_recent_players works, but doesn't actually provide any data at all. Unfortunate.")
         await self.wait_for_ready()
         recent = requests.get(f"https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/recent-players/server/{server_id}", headers=self.user_headers)
-        print(recent.content, recent.status_code)
+        self._log_info(f"{recent.content}|{recent.status_code}")
         recent = recent.content.decode('utf-8')
         recent = json.loads(recent)
         return recent
@@ -386,7 +416,7 @@ class Py_Tale:
         return FunctionDisabledException("request_user_stats does not work. Must be a dev only command...")
         await self.wait_for_ready()
         user_stats = requests.get(f"https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/Users/{player_id}/statistics", headers=self.user_headers)
-        print(user_stats.status_code, user_stats.content)
+        self._log_info(f"{user_stats.status_code} {user_stats.content}")
         user_stats = user_stats.content.decode('utf-8')
         user_stats = json.loads(user_stats)
         return user_stats
@@ -402,7 +432,7 @@ class Py_Tale:
         return FunctionDisabledException("request_to_join Not possible for bot accounts... Which is kinda the whole idea... So yeah...")
         await self.wait_for_ready()
         join = requests.post(f"https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/Groups/{group_id}/requests", headers=self.ws_headers)
-        print(join.status_code, join.content)
+        self._log_info(f"{join.status_code}|{join.content}")
         join = join.content.decode('utf-8')
         join = json.loads(join)
         return join
@@ -530,7 +560,7 @@ class Py_Tale:
     async def request_user_permissions(self, player_id):
         return FunctionDisabledException("request_user_permissions Dev only command...")
         user_perms = requests.get(f"https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/Users/{player_id}/permissions", headers=self.user_headers)
-        print(user_perms.content, user_perms.status_code)
+        self._log_info(f"{user_perms.content} {user_perms.status_code}")
         user_perms = user_perms.content.decode('utf-8')
         user_perms = json.loads(user_perms)
         return user_perms
@@ -545,7 +575,7 @@ class Py_Tale:
     async def request_user_achievements(self, player_id):
         return FunctionDisabledException("request_user_achievements is a dev only command seemingly...")
         user_achievements = requests.get(f"https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/users/{player_id}/achievements", headers=self.user_headers)
-        print(user_achievements.content,user_achievements.status_code)
+        self._log_info(f"{user_achievements.content} {user_achievements.status_code}")
         user_achievements = user_achievements.content.decode('utf-8')
         user_achievements = json.loads(user_achievements)
         return user_achievements
@@ -569,7 +599,7 @@ class Py_Tale:
         content = str(content)
         await self.ws.send(content)
         if self.debug:
-            print(Fore.CYAN + str(datetime.now()).split(".")[0], "||", f"[SENT]> {content}", end=Style.RESET_ALL + "\n")  # end = Style.RESET_ALL prevents other prints from containing the set color
+            self._log_sent(f"> {content}")
 
     def increment(self): #This is an internally used function, not meant to be called by users of the library.
         self.id += 1     #Calling this however, would not break the library :3
@@ -586,7 +616,7 @@ class Py_Tale:
         content = f'{{"id": {i}, "method": "DELETE", "path": "{sub}", "authorization": "{self.ws_headers["Authorization"]}"}}'
         await self.ws.send(content)
         if self.debug:
-            print(Fore.CYAN + str(datetime.now()).split(".")[0], "||", f"[SENT] (main websocket)> {content}", end=Style.RESET_ALL + "\n")  # end = Style.RESET_ALL prevents other prints from containing the set color
+            self._log_sent(f"(main websocket)> {content}")
         if sub_name in self.main_subscriptions:
             del self.main_subscriptions[sub_name]
         self.websocket_responses[i] = None
@@ -603,7 +633,7 @@ class Py_Tale:
         content = f'{{"id": {i}, "method": "POST", "path": "{sub}", "authorization": "{self.ws_headers["Authorization"]}"}}'
         await self.ws.send(content)
         if self.debug:
-            print(Fore.CYAN + str(datetime.now()).split(".")[0], "||", f"[SENT] (main websocket)> {content}", end=Style.RESET_ALL + "\n")  # end = Style.RESET_ALL prevents other prints from containing the set color
+            self._log_sent(f"(main websocket)> {content}")
         if sub_name not in self.main_subscriptions:
             self.main_subscriptions[sub_name] = {"callbacks":[callback], "fullname": sub}
         else:
@@ -619,7 +649,7 @@ class Py_Tale:
         self.websocket_responses[i] = None
         await self.ws.send(content)
         if self.debug:
-            print(Fore.CYAN + str(datetime.now()).split(".")[0], "||", f"[SENT] (main websocket)> {content}", end=Style.RESET_ALL + "\n")  # end = Style.RESET_ALL prevents other prints from containing the set color
+            self._log_sent(f"(main websocket)> {content}")
         return await self.responder(i)
 
     async def run_ws(self):
@@ -630,7 +660,7 @@ class Py_Tale:
                 self.ws_connected = True
                 if not self.migrate:
                     self.ws = websocket
-                    print(str(datetime.now()).split(".")[0], "||", "Main websocket started!") ###############
+                    self._log_info("Main websocket started!") ###############
                     if len(self.main_subscriptions) > 0:
                         for iterate in self.main_subscriptions:
                             fullname = self.main_subscriptions[iterate]["fullname"]
@@ -638,37 +668,37 @@ class Py_Tale:
                             to_send = f'{{"id": {i}, "method": "POST", "path": "{fullname}", "authorization": "{self.ws_headers["Authorization"]}"}}'
                             await websocket.send(to_send)
                             if self.debug:
-                                print(Fore.CYAN + str(datetime.now()).split(".")[0], "||", f"[SENT] (main websocket)> {to_send}", end=Style.RESET_ALL + "\n")  # end = Style.RESET_ALL prevents other prints from containing the set color
+                                self._log_sent(f"(main websocket)> {to_send}")
                 elif self.migrate:
                     self.migrate = False
                     if self.migrate_token == None:  #This if section prevents a rare bug where the migration token is not yet received before migration happens.
                         timeout = 10                #timeout in seconds
                         timeout = timeout*10        #timeout converted to int we use for while loop
                         if self.debug:
-                            print(Fore.RED + "Migration token not received yet! Activating counter-measures...", end=Style.RESET_ALL + "\n")
+                            self._log_error(f"Migration token not received yet! Activating counter-measures...")
                         while self.migrate_token == None and timeout > 0:
                             await asyncio.sleep(.1)
                             timeout -= 1
                         if self.migrate_token == None:
                             if self.debug:
-                                print(Fore.RED + "Looks like the migration token can't be received. Using locally stored variable as backup! All subscriptions should be restored.", end=Style.RESET_ALL + "\n")
+                                self._log_error(f"Looks like the migration token can't be received. Using locally stored variable as backup! All subscriptions should be restored.")
                             for iterate in self.main_subscriptions:
                                 fullname = self.main_subscriptions[iterate]["fullname"]
                                 i = self.increment()
                                 to_send = f'{{"id": {i}, "method": "POST", "path": "{fullname}", "authorization": "{self.ws_headers["Authorization"]}"}}'
                                 await websocket.send(to_send)
                                 if self.debug:
-                                    print(Fore.CYAN + str(datetime.now()).split(".")[0], "||", f"[SENT] (main websocket)> {to_send}", end=Style.RESET_ALL + "\n")  # end = Style.RESET_ALL prevents other prints from containing the set color
+                                    self._log_sent(f"(main websocket)> {to_send}")
                         else:
                             if self.debug:
-                                print(Fore.RED + "Migration token received. Continuing!", end=Style.RESET_ALL + "\n")
+                                self._log_error(f"Migration token received. Continuing!")
                     data = str({"id": self.increment(), "method": "POST", "path": "migrate", "content": self.migrate_token, "authorization": f"{self.ws_headers['Authorization']}"})
                     if self.debug:
-                        print(str(datetime.now()).split(".")[0], "||", "migrated")
+                        self._log_info("migrated")
                     await websocket.send(data)
                     self.ws = websocket
                     if self.debug:
-                        print(Fore.CYAN + str(datetime.now()).split(".")[0], "||", f"[SENT] (main websocket)> {data}", end=Style.RESET_ALL + "\n")  # end = Style.RESET_ALL prevents other prints from containing the set color
+                        self._log_sent(f"(main websocket)> {data}")
                 while True:
                     try:
                         var = await websocket.recv()
@@ -679,10 +709,10 @@ class Py_Tale:
                                     if int(var["responseCode"]) == 200:
                                         self.migrate_token = var["content"]
                                     else:
-                                        print(Fore.RED + "Error in migrate response: Ignoring new key. I will perform a manual migrate instead. (non-200 response code)", end=Style.RESET_ALL + "\n")
+                                        self._log_error(f"Error in migrate response: Ignoring new key. I will perform a manual migrate instead. (non-200 response code)")
                                 except Exception as e:
                                     if self.debug:
-                                        print(Fore.RED + f"Error in migrate response: Ignoring new key. I will perform a manual migrate instead. ({e})", end=Style.RESET_ALL + "\n")
+                                        self._log_error(f"Error in migrate response: Ignoring new key. I will perform a manual migrate instead. ({e})")
                         if self.ws is websocket:                    #Only listen to subscriptions if the websocket is the latest websocket. Safety check for preventing double subscriptions if migrate fails while two websockets are open.
                             if "id" in var and "event" in var:
                                 if var["event"] == "response" and int(var["id"]) in self.websocket_responses:
@@ -691,7 +721,7 @@ class Py_Tale:
                                     for function in self.main_subscriptions[var["event"]]["callbacks"]:
                                         asyncio.create_task(function(var))
                             if self.debug:
-                                print(Fore.GREEN + str(datetime.now()).split(".")[0], "||", f"[RECEIVED] (main websocket)< {var}", end=Style.RESET_ALL + "\n")
+                                self._log_received(f"(main websocket)< {var}")
                         if datetime.now() >= self.expire_time and create:
                             self.migrate_token = None
                             await self.ws_send({"id": self.increment(), "method": "GET", "path": "migrate", "authorization": f"{self.ws_headers['Authorization']}"})
@@ -701,21 +731,21 @@ class Py_Tale:
                             if self.user_initialized:
                                 await self.request_user_token()
                             if self.debug:
-                                print(str(datetime.now()).split(".")[0], "||", "migrating...")
+                                self._log_info("migrating...")
                             asyncio.create_task(self.run_ws())
                     except websockets.ConnectionClosedOK:
                         if self.debug:
-                            print(str(datetime.now()).split(".")[0], "||", "old websocket expired.")
+                            self._log_info("old websocket expired.")
                         return
                     except Exception:
                         traceback.print_exc()
-                        print("\n" + Fore.RED + str(datetime.now()).split(".")[0], "||", "There was an error in the main websocket. See above. I will try to start it again in 1 minute", end=Style.RESET_ALL + "\n\n")
+                        self._log_error(f"There was an error in the main websocket. See above. I will try to start it again in 1 minute")
                         await asyncio.sleep(60)
                         self.migrate = False
                         asyncio.create_task(self.run_ws())
                         return
         except asyncio.TimeoutError:
-            print(Fore.RED + str(datetime.now()).split(".")[0], "||", "Main websocket timeout (Is your connection working?) restarting in one minute...", end=Style.RESET_ALL + "\n")
+            self._log_error(f"Main websocket timeout (Is your connection working?) restarting in one minute...")
             await asyncio.sleep(60)
             asyncio.create_task(self.run_ws())
             return
@@ -736,7 +766,7 @@ class Py_Tale:
         }
         if user_password != None:
             if len(user_password) != 128: # Lazy way of checking if passed password is a hash or plain text.
-                print(Fore.RED + "Warning! It is recommended to use a sha512 hash of your password, rather than plain text.\nContinuing as normal...", end=Style.RESET_ALL + "\n")
+                self._log_error(f"Warning! It is recommended to use a sha512 hash of your password, rather than plain text.\nContinuing as normal...")
 
     async def ping_websocket(self):  # Function to periodically ping the websocket to keep connection alive.
         try:
@@ -747,7 +777,7 @@ class Py_Tale:
                 await self.ws_send("ping!")  # Sends ping, it's an invalid command, but keeps the connection alive.
                 await asyncio.sleep(4 * 60)  # Wait 4 minutes
         except Exception:
-            print(str(datetime.now()).split(".")[0], "||", "ping_websocket failed. Restarting it in 1 minute...")
+            self._log_info("ping_websocket failed. Restarting it in 1 minute...")
             await asyncio.sleep(60)
             await self.ping_websocket()
 
@@ -764,19 +794,19 @@ class Py_Tale:
             await asyncio.sleep(1)
 
     async def run(self):
-        self.logger.info("Creating py_tale background tasks")
+        self._logger.info("Creating py_tale background tasks")
         try:
             asyncio.create_task(self.run_ws())
         except:
             traceback.print_exc()
-            print(Fore.RED + str(datetime.now()).split(".")[0], "||", "Failed at task create_task() in Py_tale.", end=Style.RESET_ALL + "\n")
+            self._log_error(f"Failed at task create_task() in Py_tale.")
             exit()
 
         try:
             asyncio.create_task(self.request_temp_token())
         except:
             traceback.print_exc()
-            print(Fore.RED + str(datetime.now()).split(".")[0], "||", "Failed at task request_temp_token() in Py_tale.", end=Style.RESET_ALL + "\n")
+            self._log_error(f"Failed at task request_temp_token() in Py_tale.")
             exit()
 
         try:
@@ -784,7 +814,7 @@ class Py_Tale:
                 asyncio.create_task(self.request_user_token())
         except:
             traceback.print_exc()
-            print(Fore.RED + str(datetime.now()).split(".")[0], "||", "Failed at task request_user_token() in Py_tale.", end=Style.RESET_ALL + "\n")
+            self._log_error(f"Failed at task request_user_token() in Py_tale.")
             exit()
 
         await self.wait_for_ws()
@@ -792,5 +822,5 @@ class Py_Tale:
             await self.ping_websocket()
         except:
             traceback.print_exc()
-            print(Fore.RED + str(datetime.now()).split(".")[0], "||", "Failed at task ping_websocket() in Py_tale.", end=Style.RESET_ALL + "\n")
+            self._log_error(f"Failed at task ping_websocket() in Py_tale.")
             exit()
