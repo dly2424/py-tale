@@ -4,7 +4,6 @@ try:
     import requests, websockets, asyncio, json, traceback, hashlib, logging, copy
     from datetime import datetime, timedelta
     from colorama import Fore, Style, init  # Colorama is a library for coloring console output. Not mandatory, but looks pretty.
-    import py_tale_logging as py_tale_logging
 
 except Exception as e:
     print(e)
