@@ -124,7 +124,7 @@ class Py_Tale:
         logger.addHandler(stdout_handler)
         self._logger = logger
 
-    def addLoggerHandler(self, handler):
+    def add_logger_handler(self, handler):
         self._logger.addHandler(handler)
 
     def _log(self, level, message, event=Events.MESSAGE):
@@ -146,10 +146,10 @@ class Py_Tale:
         self._logger.warn(message, extra={'event': Events.MESSAGE})
 
     def _log_sent(self, message):
-        self._log_info(message, extra={'event': Events.SENT})
+        self._logger.log(logging.INFO, message, extra={'event': Events.SENT})
 
     def _log_received(self, message):
-        self._log_info(message, extra={'event': Events.RECEIVED})
+       self._logger.log(logging.INFO, message, extra={'event': Events.RECEIVED})
 
     async def new_console_websocket(self, addr, port, server_id, token): # Uses SERVER id. - verified
         try:
