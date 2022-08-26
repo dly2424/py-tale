@@ -37,7 +37,7 @@ async def main():
     invites = await bot.request_invites()           # Get all of our invites to servers
     for x in invites:
         await bot.request_accept_invite(x['id'])    # Accept all invites
-    await bot.main_sub("subscription/me-group-invite-create/" + bot.user_id, on_invited) # Subscribe to know when we get invited
+    await bot.main_sub("subscription/me-group-invite-create/" + str(bot.user_id), on_invited) # Subscribe to know when we get invited
     await bot.create_console(457468463)             # Start the connection to the server 457468463's console
     for x in await bot.get_active_consoles():       # For every server we have opened with (bot.create_console)
         await bot.console_sub("PlayerKilled", on_playerkilled, server_id=x)         # Subscribe to when players get killed. Execute on_playerkilled when someone dies.
