@@ -64,7 +64,7 @@ class Py_Tale:
         self.debug = False
         self.id = 0
         self.ws = None
-        self.base_url = "https://accounts.townshiptale.com/api"
+        self.base_url = "https://accounts.townshiptale.com"
         self.token_endpoint = "https://accounts.townshiptale.com/connect/token"  # This is the endpoint we use to get our websocket token
         self.websocket_url = "wss://websocket.townshiptale.com"  # This is the url that contains the websocket we connect to.
         self.aws_endpoint = "https://webapi.townshiptale.com"  # This is the endpoint base we use to request info like invites to servers
