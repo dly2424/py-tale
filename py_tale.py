@@ -64,10 +64,10 @@ class Py_Tale:
         self.debug = False
         self.id = 0
         self.ws = None
-        self.base_url = "https://accounts.townshiptale.com"
+        self.base_url = "https://accounts.townshiptale.com/api"
         self.token_endpoint = "https://accounts.townshiptale.com/connect/token"  # This is the endpoint we use to get our websocket token
-        self.websocket_url = "wss://5wx2mgoj95.execute-api.ap-southeast-2.amazonaws.com/dev"  # This is the url that contains the websocket we connect to.
-        self.aws_endpoint = "https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/"  # This is the endpoint base we use to request info like invites to servers
+        self.websocket_url = "wss://websocket.townshiptale.com"  # This is the url that contains the websocket we connect to.
+        self.aws_endpoint = "https://webapi.townshiptale.com"  # This is the endpoint base we use to request info like invites to servers
         self.user_id = ''
         self.client_id = ''
         self.client_secret = ''
@@ -147,7 +147,7 @@ class Py_Tale:
             server_id = int(server_id)
             if server_id in self.console_websockets:
                 raise ConsoleAlreadyCreatedException(f"Console {server_id} is already opened. Cannot create a new console for this server.")
-            console_res = requests.post(f"https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/servers/{server_id}/console", headers=self.ws_headers, data=body)
+            console_res = requests.post(f"{self.aws_endpoint}/api/servers/{server_id}/console", headers=self.ws_headers, data=body)
             if console_res.status_code != 200:
                 raise ConsolePermissionsDenied("Lacking permission to use this console. Is it the right ID? Are you a moderator or owner?")
             console_res = console_res.content.decode('utf-8')
@@ -294,7 +294,7 @@ class Py_Tale:
 
     async def request_post_console(self, server_id, body='{"should_launch":"false","ignore_offline":"false"}'): # Uses SERVER id. - verified
         await self.wait_for_ready()
-        console_res = requests.post(f"https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/servers/{server_id}/console", headers=self.ws_headers, data=body)
+        console_res = requests.post(f"{self.aws_endpoint}/api/servers/{server_id}/console", headers=self.ws_headers, data=body)
         if console_res.status_code != 200:
             raise ConsolePermissionsDenied("Lacking permission to use this console. Is it the right ID?")
         console_res = console_res.content.decode('utf-8')
@@ -303,7 +303,7 @@ class Py_Tale:
 
     async def request_ban_player(self, group_id, player_id):
         await self.wait_for_ready()
-        ban = requests.post(f"https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/groups/{group_id}/bans/{player_id}", headers=self.ws_headers)
+        ban = requests.post(f"{self.aws_endpoint}/api/groups/{group_id}/bans/{player_id}", headers=self.ws_headers)
         print(ban.status_code, ban.content)
         ban = ban.content.decode('utf-8')
         ban = json.loads(ban)
@@ -311,14 +311,14 @@ class Py_Tale:
 
     async def request_unban_player(self, group_id, player_id):
         await self.wait_for_ready()
-        unban = requests.delete(f"https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/groups/{group_id}/bans/{player_id}", headers=self.ws_headers)
+        unban = requests.delete(f"{self.aws_endpoint}/api/groups/{group_id}/bans/{player_id}", headers=self.ws_headers)
         unban = unban.content.decode('utf-8')
         unban = json.loads(unban)
         return unban
 
     async def request_group_bans(self, group_id):
         await self.wait_for_ready()
-        ban_list = requests.get(f"https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/Groups/{group_id}/bans", headers=self.ws_headers)
+        ban_list = requests.get(f"{self.aws_endpoint}/api/Groups/{group_id}/bans", headers=self.ws_headers)
         ban_list = ban_list.content.decode('utf-8')
         ban_list = json.loads(ban_list)
         return ban_list
@@ -326,7 +326,7 @@ class Py_Tale:
     async def request_user_discord(self, player_id):    #may not be possible via bot, instead a user may need to do this
         return FunctionDisabledException("Looks like devs/mods only have permissions to get discords from players...")
         await self.wait_for_ready()
-        user_discord = requests.get(f"https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/Account/discord/{player_id}", headers=self.user_headers)
+        user_discord = requests.get(f"{self.aws_endpoint}/api/Account/discord/{player_id}", headers=self.user_headers)
         print(user_discord.status_code)
         user_discord = user_discord.content.decode('utf-8')
         print(user_discord)
@@ -335,7 +335,7 @@ class Py_Tale:
 
     async def request_linked_accounts(self, player_id):
         await self.wait_for_ready()
-        user_links = requests.get(f"https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/linked/{player_id}/linked", headers=self.user_headers)
+        user_links = requests.get(f"{self.aws_endpoint}/api/linked/{player_id}/linked", headers=self.user_headers)
         user_links = user_links.content.decode('utf-8')
         user_links = json.loads(user_links)
         return user_links
@@ -343,7 +343,7 @@ class Py_Tale:
     async def request_recent_players(self, server_id):
         return FunctionDisabledException("request_recent_players works, but doesn't actually provide any data at all. Unfortunate.")
         await self.wait_for_ready()
-        recent = requests.get(f"https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/recent-players/server/{server_id}", headers=self.user_headers)
+        recent = requests.get(f"{self.aws_endpoint}/api/recent-players/server/{server_id}", headers=self.user_headers)
         print(recent.content, recent.status_code)
         recent = recent.content.decode('utf-8')
         recent = json.loads(recent)
@@ -352,7 +352,7 @@ class Py_Tale:
     async def request_user_stats(self, player_id):    #may not be possible via bot, instead a user may need to do this
         return FunctionDisabledException("request_user_stats does not work. Must be a dev only command...")
         await self.wait_for_ready()
-        user_stats = requests.get(f"https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/Users/{player_id}/statistics", headers=self.user_headers)
+        user_stats = requests.get(f"{self.aws_endpoint}/api/Users/{player_id}/statistics", headers=self.user_headers)
         print(user_stats.status_code, user_stats.content)
         user_stats = user_stats.content.decode('utf-8')
         user_stats = json.loads(user_stats)
@@ -360,7 +360,7 @@ class Py_Tale:
 
     async def request_pending_requests(self, group_id):
         await self.wait_for_ready()
-        pending_requests = requests.get(f"https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/Groups/{group_id}/requests", headers=self.ws_headers)
+        pending_requests = requests.get(f"{self.aws_endpoint}/api/Groups/{group_id}/requests", headers=self.ws_headers)
         pending_requests = pending_requests.content.decode('utf-8')
         pending_requests = json.loads(pending_requests)
         return pending_requests
@@ -368,7 +368,7 @@ class Py_Tale:
     async def request_to_join(self, group_id):
         return FunctionDisabledException("request_to_join Not possible for bot accounts... Which is kinda the whole idea... So yeah...")
         await self.wait_for_ready()
-        join = requests.post(f"https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/Groups/{group_id}/requests", headers=self.ws_headers)
+        join = requests.post(f"{self.aws_endpoint}/api/Groups/{group_id}/requests", headers=self.ws_headers)
         print(join.status_code, join.content)
         join = join.content.decode('utf-8')
         join = json.loads(join)
@@ -376,21 +376,21 @@ class Py_Tale:
 
     async def request_member_info(self, group_id, player_id):
         await self.wait_for_ready()
-        member = requests.get(f"https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/Groups/{group_id}/members/{player_id}", headers=self.ws_headers)
+        member = requests.get(f"{self.aws_endpoint}/api/Groups/{group_id}/members/{player_id}", headers=self.ws_headers)
         member = member.content.decode('utf-8')
         member = json.loads(member)
         return member
 
     async def request_check_pending_invites(self, group_id):
         await self.wait_for_ready()
-        pending_requests = requests.get(f"https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/Groups/{group_id}/invites", headers=self.ws_headers)
+        pending_requests = requests.get(f"{self.aws_endpoint}/api/Groups/{group_id}/invites", headers=self.ws_headers)
         pending_requests = pending_requests.content.decode('utf-8')
         pending_requests = json.loads(pending_requests)
         return pending_requests
 
     async def request_approve_invite(self, group_id, player_id):  # Does not work. Going to have to check this... response 405
         await self.wait_for_ready()
-        code = requests.post(f"https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/groups/{group_id}/requests/{player_id}", headers=self.ws_headers)
+        code = requests.post(f"{self.aws_endpoint}/api/groups/{group_id}/requests/{player_id}", headers=self.ws_headers)
         if code.content.decode('utf-8') == "" or code.content.decode('utf-8') == None:
             code = {"result":"Error, player/group not found", "failed":True}
         else:
@@ -399,7 +399,7 @@ class Py_Tale:
 
     async def request_decline_invite(self, group_id, player_id):  # Maybe working? Untested. Probably fails too.
         await self.wait_for_ready()
-        code = requests.delete(f"https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/groups/{group_id}/requests/{player_id}", headers=self.ws_headers)
+        code = requests.delete(f"{self.aws_endpoint}/api/groups/{group_id}/requests/{player_id}", headers=self.ws_headers)
         if code.content.decode('utf-8') == "" or code.content.decode('utf-8') == None:
             code = {"result":"Error, player/group not found", "failed":True}
         else:
@@ -408,69 +408,69 @@ class Py_Tale:
 
     async def request_invite_player_id(self, group_id, player_id):  # Uses GROUP id. - verified
         await self.wait_for_ready()                                 # Invites a player to join the specified group
-        code = requests.post(f"https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/groups/{group_id}/invites/{player_id}", headers=self.ws_headers)
+        code = requests.post(f"{self.aws_endpoint}/api/groups/{group_id}/invites/{player_id}", headers=self.ws_headers)
         code = code.content.decode('utf-8')
         code = json.loads(code)
         return code
 
     async def request_uninvite_player_id(self, group_id, player_id):    # Uses GROUP id. - verified
         await self.wait_for_ready()                                     # Revokes a player's invite to join a server
-        code = requests.delete(f"https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/groups/{group_id}/invites/{player_id}", headers=self.ws_headers)
+        code = requests.delete(f"{self.aws_endpoint}/api/groups/{group_id}/invites/{player_id}", headers=self.ws_headers)
         code = code.content.decode('utf-8')
         code = json.loads(code)
         return code
 
     async def request_server_by_id(self, server_id): # Uses SERVER id. - verified
         await self.wait_for_ready()
-        server_info = requests.get(f"https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/servers/{server_id}", headers=self.ws_headers)
+        server_info = requests.get(f"{self.aws_endpoint}/api/servers/{server_id}", headers=self.ws_headers)
         server_info = server_info.content.decode('utf-8')
         server_info = json.loads(server_info)
         return server_info
 
     async def request_server_by_name(self, server_name): # same as request_server_by_id but with a string name.
         await self.wait_for_ready()
-        server_info = requests.get(f"https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/servers/name/{server_name}", headers=self.ws_headers)
+        server_info = requests.get(f"{self.aws_endpoint}/api/servers/name/{server_name}", headers=self.ws_headers)
         server_info = server_info.content.decode('utf-8')
         server_info = json.loads(server_info)
         return server_info
 
     async def request_group_by_id(self, group_id): # Uses GROUP id. - verified
         await self.wait_for_ready()
-        group_info = requests.get(f"https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/Groups/{group_id}", headers=self.ws_headers)
+        group_info = requests.get(f"{self.aws_endpoint}/api/Groups/{group_id}", headers=self.ws_headers)
         group_info = group_info.content.decode('utf-8')
         group_info = json.loads(group_info)
         return group_info
 
     async def request_accept_invite(self, group_id):    # Uses GROUP id. - verified
         await self.wait_for_ready()                     # Accepts an invite to a server
-        accept = requests.post(f"https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/groups/invites/{group_id}", headers=self.ws_headers)
+        accept = requests.post(f"{self.aws_endpoint}/api/groups/invites/{group_id}", headers=self.ws_headers)
         accept = accept.content.decode('utf-8')
         accept = json.loads(accept)
         return accept
 
     async def request_reject_invite(self, group_id):    # Uses GROUP id. - verified
         await self.wait_for_ready()                     # Rejects an invite to a server
-        reject = requests.delete(f"https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/groups/invites/{group_id}", headers=self.ws_headers)
+        reject = requests.delete(f"{self.aws_endpoint}/api/groups/invites/{group_id}", headers=self.ws_headers)
         reject = reject.content.decode('utf-8')
         reject = json.loads(reject)
         return reject
 
     async def request_current_groups(self):
-        groups_list = requests.get(f"https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/groups/joined?limit=1000", headers=self.ws_headers)
+        groups_list = requests.get(f"{self.aws_endpoint}/api/groups/joined?limit=1000", headers=self.ws_headers)
         groups_list = groups_list.content.decode('utf-8')
         groups_list = json.loads(groups_list)
         return groups_list
 
     async def request_members(self, group_id): # Uses GROUP id. - verified
         await self.wait_for_ready()
-        members_list = requests.get(f"https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/groups/{group_id}/members", headers=self.ws_headers)
+        members_list = requests.get(f"{self.aws_endpoint}/api/groups/{group_id}/members", headers=self.ws_headers)
         members_list = members_list.content.decode('utf-8')
         members_list = json.loads(members_list)
         return members_list
 
     async def request_invites(self):
         await self.wait_for_ready()
-        invites_list = requests.get("https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/groups/invites?limit=1000", headers=self.ws_headers)
+        invites_list = requests.get(f"{self.aws_endpoint}/api/groups/invites?limit=1000", headers=self.ws_headers)
         invites_list = invites_list.content.decode('utf-8')
         invites_list = json.loads(invites_list)
         return invites_list
@@ -479,7 +479,7 @@ class Py_Tale:
         if self.user_initialized:
             await self.wait_for_ready()
             body = '{"username":"' + username + '"}'
-            player_info = requests.post("https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/users/search/username", headers=self.user_headers, data=body)
+            player_info = requests.post(f"{self.aws_endpoint}/api/users/search/username", headers=self.user_headers, data=body)
             player_info = json.loads(player_info.content)
             return player_info
         else:
@@ -488,7 +488,7 @@ class Py_Tale:
     async def request_search_userid(self, player_id): # Bots can't do this apparently... (but users can!)
         if self.user_initialized:
             await self.wait_for_ready()
-            player_info = requests.get(f"https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/users/{player_id}", headers=self.user_headers)
+            player_info = requests.get(f"{self.aws_endpoint}/api/users/{player_id}", headers=self.user_headers)
             player_info = json.loads(player_info.content)
             return player_info
         else:
@@ -496,7 +496,7 @@ class Py_Tale:
 
     async def request_user_permissions(self, player_id):
         return FunctionDisabledException("request_user_permissions Dev only command...")
-        user_perms = requests.get(f"https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/Users/{player_id}/permissions", headers=self.user_headers)
+        user_perms = requests.get(f"{self.aws_endpoint}/api/Users/{player_id}/permissions", headers=self.user_headers)
         print(user_perms.content, user_perms.status_code)
         user_perms = user_perms.content.decode('utf-8')
         user_perms = json.loads(user_perms)
@@ -504,14 +504,14 @@ class Py_Tale:
 
     async def request_change_member_role(self, group_id, player_id, role_int):  # 1 is member, 2 is moderator and 7 is owner role.
         return FunctionDisabledException("request_change_member_role Bot accounts do not seem capable of doing this... Making a user able to do it would be meaningless...")
-        change_role = requests.post(f"https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/Groups/{group_id}/members/{player_id}/role/{role_int}", headers=self.ws_headers)
+        change_role = requests.post(f"{self.aws_endpoint}/api/Groups/{group_id}/members/{player_id}/role/{role_int}", headers=self.ws_headers)
         change_role = change_role.content.decode('utf-8')
         change_role = json.loads(change_role)
         return change_role
 
     async def request_user_achievements(self, player_id):
         return FunctionDisabledException("request_user_achievements is a dev only command seemingly...")
-        user_achievements = requests.get(f"https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/users/{player_id}/achievements", headers=self.user_headers)
+        user_achievements = requests.get(f"{self.aws_endpoint}/api/users/{player_id}/achievements", headers=self.user_headers)
         print(user_achievements.content,user_achievements.status_code)
         user_achievements = user_achievements.content.decode('utf-8')
         user_achievements = json.loads(user_achievements)
@@ -519,14 +519,14 @@ class Py_Tale:
 
     async def request_check_user_role(self, group_id, player_id, role_int):
         body = f"{{\"permissions\":[{role_int}]}}"
-        user_perms = requests.post(f"https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/Groups/{group_id}/{player_id}/permissions/check", headers=self.ws_headers, data=body)
+        user_perms = requests.post(f"{self.aws_endpoint}/api/Groups/{group_id}/{player_id}/permissions/check", headers=self.ws_headers, data=body)
         user_perms = user_perms.content.decode('utf-8')
         user_perms = json.loads(user_perms)
         return user_perms
 
     async def request_consoles(self):
         await self.wait_for_ready()
-        consoles_list = requests.get("https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/servers/console", headers=self.ws_headers)
+        consoles_list = requests.get(f"{self.aws_endpoint}/api/servers/console", headers=self.ws_headers)
         consoles_list = consoles_list.content.decode('utf-8')
         consoles_list = json.loads(consoles_list)
         return consoles_list
