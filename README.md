@@ -339,7 +339,7 @@ Currently only returns None.
         •client_secret - Your client secret sent to you by Joel. String object
         •scope_string - Your scopes sent to you by Joel. Should be a long string with scopes separated by spaces. String object
         •user_id - Your user ID sent to you by Joel. Int object
-        •debug (optional!) - Setting this to True will enable colored printing to console of all data being sent and received by websockets and endpoints. Bool object
+        •debug (optional!) - NOTE: Currently does nothing as of 1.9.5. Replaced by logging. Setting this to True will enable colored printing to console of all data being sent and received by websockets and endpoints. Bool object
         •user_name (optional!) - Setting this along side your user_password will allow you to login to a user account which enables some features that bot accounts normally can't use. String object
         •user_password (optional!) - Use this along side your user_name to login to an Alta user account. This can be plain-text or a sha512 hash. String object
     Example return:
