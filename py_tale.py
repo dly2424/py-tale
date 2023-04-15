@@ -54,15 +54,15 @@ class WrongArgumentFormatException(Error):
 def fprint(level, content):
     time_string = str(datetime.now())[:-7]
     if level == 1:
-        logging.debug(f'{time_string} || {content}')
+        logging.debug(f'{time_string} || {content}', Style.RESET_ALL)
     if level == 2:
-        logging.info(f'{time_string} || {content}')
+        logging.info(f'{time_string} || {content}', Style.RESET_ALL)
     if level == 3:
-        logging.warning(f'{time_string} || {content}')
+        logging.warning(f'{time_string} || {content}', Style.RESET_ALL)
     if level == 4:
-        logging.error(f'{time_string} || {content}')
+        logging.error(f'{time_string} || {content}', Style.RESET_ALL)
     if level == 5:
-        logging.critical(f'{time_string} || {content}')
+        logging.critical(f'{time_string} || {content}', Style.RESET_ALL)
 
 
 class Py_Tale:
@@ -354,35 +354,35 @@ class Py_Tale:
         try:
             async with websockets.connect(f"ws://{addr}:{port}", open_timeout=100) as websocket:  # This is ws protocol not wss
                 await websocket.send(token)
-                fprint(1, Fore.CYAN + f"[SENT] (console {server_id} websocket)> {token}", end=Style.RESET_ALL + "\n")  # end = Style.RESET_ALL prevents other prints from containing the set color
+                fprint(1, Fore.CYAN + f"[SENT] (console {server_id} websocket)> {token}")  # end = Style.RESET_ALL prevents other prints from containing the set color
                 fprint(1, f"Console websocket for server {server_id} started!")
                 token_response = await websocket.recv()
                 token_response = json.loads(token_response)
                 self.console_websockets[server_id] = websocket
-                fprint(1, Fore.GREEN + f"[RECEIVED] (console {server_id} websocket)< {token_response}", end=Style.RESET_ALL + "\n")
+                fprint(1, Fore.GREEN + f"[RECEIVED] (console {server_id} websocket)< {token_response}")
                 if server_id in self.console_subscriptions:
                     if len(self.console_subscriptions[server_id]) > 0:
                         for x in self.console_subscriptions[server_id]:
                             to_send = f'{{"id":{self.increment()},"content":"websocket subscribe {x}"}}'
                             await websocket.send(to_send)
-                            fprint(1, Fore.CYAN + f"[SENT] (console {server_id} websocket)> {to_send}", end=Style.RESET_ALL + "\n")  # end = Style.RESET_ALL prevents other prints from containing the set color
+                            fprint(1, Fore.CYAN + f"[SENT] (console {server_id} websocket)> {to_send}")  # end = Style.RESET_ALL prevents other prints from containing the set color
                 while True:
                     var = await websocket.recv()
                     var = json.loads(var)
                     if var["type"] == "CommandResult":
                         self.websocket_responses[int(var["commandId"])] = var
-                        fprint(1, Fore.GREEN + f"[RECEIVED] (console {server_id} websocket)< {var}", end=Style.RESET_ALL + "\n")
+                        fprint(1, Fore.GREEN + f"[RECEIVED] (console {server_id} websocket)< {var}")
                         continue
                     if server_id in self.console_subscriptions:
                         if var["eventType"] in self.console_subscriptions[server_id]:
                             for function in self.console_subscriptions[server_id][var["eventType"]]:
                                 var["server_id"] = server_id
                                 asyncio.create_task(function(var))  # call each function and pass the data.
-                        fprint(1, Fore.GREEN + f"[RECEIVED] (console {server_id} websocket)< {var}", end=Style.RESET_ALL + "\n")
-                fprint(1, Fore.RED + f"Console websocket for server {server_id} closed.", end=Style.RESET_ALL + "\n")  # This should never be called, but just in case.
+                        fprint(1, Fore.GREEN + f"[RECEIVED] (console {server_id} websocket)< {var}")
+                fprint(1, Fore.RED + f"Console websocket for server {server_id} closed.")  # This should never be called, but just in case.
         except Exception as e:
-            fprint(1, Fore.RED + f"Server console {server_id} failed. Error details listed below:\n", e, end=Style.RESET_ALL + "\n")
-            fprint(1, Fore.RED + "The server likely shutdown. I'll try to start the console again when the server is back up!", end=Style.RESET_ALL + "\n")
+            fprint(1, Fore.RED + f"Server console {server_id} failed. Error details listed below:\n{e}")
+            fprint(1, Fore.RED + "The server likely shutdown. I'll try to start the console again when the server is back up!")
             if server_id in self.console_websockets:
                 del self.console_websockets[server_id]
 
@@ -461,7 +461,7 @@ class Py_Tale:
                 await asyncio.sleep(.025)
                 content = f'{{"id":{self.increment()},"content":"websocket subscribe {sub}"}}'
                 await v.send(content)
-                fprint(1, Fore.CYAN + str(datetime.now()).split(".")[0], "||", f"[SENT] (console {k} websocket)> {content}", end=Style.RESET_ALL + "\n")  # end = Style.RESET_ALL prevents other prints from containing the set color
+                fprint(1, Fore.CYAN + str(datetime.now()).split(".")[0], "||", f"[SENT] (console {k} websocket)> {content}")  # end = Style.RESET_ALL prevents other prints from containing the set color
                 if k not in self.console_subscriptions:
                     self.console_subscriptions[k] = {}
                 if sub not in self.console_subscriptions[k]:
@@ -475,7 +475,7 @@ class Py_Tale:
             content = f'{{"id":{self.increment()},"content":"websocket subscribe {sub}"}}'
             if server_id in self.console_websockets:
                 await self.console_websockets[server_id].send(content)
-                fprint(1, Fore.CYAN + f"[SENT] (console {server_id} websocket)> {content}", end=Style.RESET_ALL + "\n")  # end = Style.RESET_ALL prevents other prints from containing the set color
+                fprint(1, Fore.CYAN + f"[SENT] (console {server_id} websocket)> {content}")  # end = Style.RESET_ALL prevents other prints from containing the set color
             if server_id not in self.console_subscriptions:
                 self.console_subscriptions[server_id] = {}
             if sub not in self.console_subscriptions[server_id]:
@@ -508,7 +508,7 @@ class Py_Tale:
         await self.wait_for_ready()
         content = str(content)
         await self.ws.send(content)
-        fprint(1, Fore.CYAN + f"[SENT]> {content}", end=Style.RESET_ALL + "\n")  # end = Style.RESET_ALL prevents other prints from containing the set color
+        fprint(1, Fore.CYAN + f"[SENT]> {content}")  # end = Style.RESET_ALL prevents other prints from containing the set color
 
     def increment(self): #This is an internally used function, not meant to be called by users of the library.
         self.id += 1     #Calling this however, would not break the library :3
@@ -524,7 +524,7 @@ class Py_Tale:
         i = self.increment()
         content = f'{{"id": {i}, "method": "DELETE", "path": "{sub}", "authorization": "{self.ws_headers["Authorization"]}"}}'
         await self.ws.send(content)
-        fprint(1, Fore.CYAN + f"[SENT] (main websocket)> {content}", end=Style.RESET_ALL + "\n")  # end = Style.RESET_ALL prevents other prints from containing the set color
+        fprint(1, Fore.CYAN + f"[SENT] (main websocket)> {content}")
         if sub_name in self.main_subscriptions:
             del self.main_subscriptions[sub_name]
         self.websocket_responses[i] = None
@@ -540,7 +540,7 @@ class Py_Tale:
         i = self.increment()
         content = f'{{"id": {i}, "method": "POST", "path": "{sub}", "authorization": "{self.ws_headers["Authorization"]}"}}'
         await self.ws.send(content)
-        fprint(1, Fore.CYAN + f"[SENT] (main websocket)> {content}", end=Style.RESET_ALL + "\n")  # end = Style.RESET_ALL prevents other prints from containing the set color
+        fprint(1, Fore.CYAN + f"[SENT] (main websocket)> {content}")  # end = Style.RESET_ALL prevents other prints from containing the set color
         if sub_name not in self.main_subscriptions:
             self.main_subscriptions[sub_name] = {"callbacks":[callback], "fullname": sub}
         else:
@@ -555,7 +555,7 @@ class Py_Tale:
         content = f'{{"id":{i},"content":"{content}"}}'
         self.websocket_responses[i] = None
         await self.ws.send(content)
-        fprint(1, Fore.CYAN + f"[SENT] (main websocket)> {content}", end=Style.RESET_ALL + "\n")  # end = Style.RESET_ALL prevents other prints from containing the set color
+        fprint(1, Fore.CYAN + f"[SENT] (main websocket)> {content}")  # end = Style.RESET_ALL prevents other prints from containing the set color
         return await self.responder(i)
 
     async def run_ws(self):
@@ -573,31 +573,31 @@ class Py_Tale:
                             i = self.increment()
                             to_send = f'{{"id": {i}, "method": "POST", "path": "{fullname}", "authorization": "{self.ws_headers["Authorization"]}"}}'
                             await websocket.send(to_send)
-                            fprint(1, Fore.CYAN + f"[SENT] (main websocket)> {to_send}", end=Style.RESET_ALL + "\n")  # end = Style.RESET_ALL prevents other prints from containing the set color
+                            fprint(1, Fore.CYAN + f"[SENT] (main websocket)> {to_send}")  # end = Style.RESET_ALL prevents other prints from containing the set color
                 elif self.migrate:
                     self.migrate = False
                     if self.migrate_token == None:  #This if section prevents a rare bug where the migration token is not yet received before migration happens.
                         timeout = 10                #timeout in seconds
                         timeout = timeout*10        #timeout converted to int we use for while loop
-                        fprint(1, Fore.RED + "Migration token not received yet! Activating counter-measures...", end=Style.RESET_ALL + "\n")
+                        fprint(1, Fore.RED + "Migration token not received yet! Activating counter-measures...")
                         while self.migrate_token == None and timeout > 0:
                             await asyncio.sleep(.1)
                             timeout -= 1
                         if self.migrate_token == None:
-                            fprint(1, Fore.RED + "Looks like the migration token can't be received. Using locally stored variable as backup! All subscriptions should be restored.", end=Style.RESET_ALL + "\n")
+                            fprint(1, Fore.RED + "Looks like the migration token can't be received. Using locally stored variable as backup! All subscriptions should be restored.")
                             for iterate in self.main_subscriptions:
                                 fullname = self.main_subscriptions[iterate]["fullname"]
                                 i = self.increment()
                                 to_send = f'{{"id": {i}, "method": "POST", "path": "{fullname}", "authorization": "{self.ws_headers["Authorization"]}"}}'
                                 await websocket.send(to_send)
-                                fprint(1, Fore.CYAN + f"[SENT] (main websocket)> {to_send}", end=Style.RESET_ALL + "\n")  # end = Style.RESET_ALL prevents other prints from containing the set color
+                                fprint(1, Fore.CYAN + f"[SENT] (main websocket)> {to_send}")  # end = Style.RESET_ALL prevents other prints from containing the set color
                         else:
-                            fprint(1, Fore.RED + "Migration token received. Continuing!", end=Style.RESET_ALL + "\n")
+                            fprint(1, Fore.RED + "Migration token received. Continuing!")
                     data = str({"id": self.increment(), "method": "POST", "path": "migrate", "content": self.migrate_token, "authorization": f"{self.ws_headers['Authorization']}"})
                     fprint(1, "migrated")
                     await websocket.send(data)
                     self.ws = websocket
-                    fprint(1, Fore.CYAN + f"[SENT] (main websocket)> {data}", end=Style.RESET_ALL + "\n")  # end = Style.RESET_ALL prevents other prints from containing the set color
+                    fprint(1, Fore.CYAN + f"[SENT] (main websocket)> {data}")  # end = Style.RESET_ALL prevents other prints from containing the set color
                 while True:
                     try:
                         var = await websocket.recv()
@@ -608,9 +608,9 @@ class Py_Tale:
                                     if int(var["responseCode"]) == 200:
                                         self.migrate_token = var["content"]
                                     else:
-                                        fprint(1, Fore.RED + "Error in migrate response: Ignoring new key. I will perform a manual migrate instead. (non-200 response code)", end=Style.RESET_ALL + "\n")
+                                        fprint(1, Fore.RED + "Error in migrate response: Ignoring new key. I will perform a manual migrate instead. (non-200 response code)")
                                 except Exception as e:
-                                    fprint(1, Fore.RED + f"Error in migrate response: Ignoring new key. I will perform a manual migrate instead. ({e})", end=Style.RESET_ALL + "\n")
+                                    fprint(1, Fore.RED + f"Error in migrate response: Ignoring new key. I will perform a manual migrate instead. ({e})")
                         if self.ws is websocket:                    #Only listen to subscriptions if the websocket is the latest websocket. Safety check for preventing double subscriptions if migrate fails while two websockets are open.
                             if "id" in var and "event" in var:
                                 if var["event"] == "response" and int(var["id"]) in self.websocket_responses:
@@ -618,7 +618,7 @@ class Py_Tale:
                                 if var["event"] in self.main_subscriptions:
                                     for function in self.main_subscriptions[var["event"]]["callbacks"]:
                                         asyncio.create_task(function(var))
-                            fprint(1, Fore.GREEN + f"[RECEIVED] (main websocket)< {var}", end=Style.RESET_ALL + "\n")
+                            fprint(1, Fore.GREEN + f"[RECEIVED] (main websocket)< {var}")
                         if datetime.now() >= self.expire_time and create:
                             self.migrate_token = None
                             await self.ws_send({"id": self.increment(), "method": "GET", "path": "migrate", "authorization": f"{self.ws_headers['Authorization']}"})
@@ -634,13 +634,13 @@ class Py_Tale:
                         return
                     except Exception:
                         traceback.print_exc()
-                        fprint(1, "\n" + Fore.RED + "There was an error in the main websocket. See above. I will try to start it again in 1 minute", end=Style.RESET_ALL + "\n\n")
+                        fprint(1, "\n" + Fore.RED + "There was an error in the main websocket. See above. I will try to start it again in 1 minute")
                         await asyncio.sleep(60)
                         self.migrate = False
                         asyncio.create_task(self.run_ws())
                         return
         except asyncio.TimeoutError:
-            fprint(1, Fore.RED + "Main websocket timeout (Is your connection working?) restarting in one minute...", end=Style.RESET_ALL + "\n")
+            fprint(1, Fore.RED + "Main websocket timeout (Is your connection working?) restarting in one minute...")
             await asyncio.sleep(60)
             asyncio.create_task(self.run_ws())
             return
@@ -661,7 +661,7 @@ class Py_Tale:
         }
         if user_password != None:
             if len(user_password) != 128: # Lazy way of checking if passed password is a hash or plain text.
-                fprint(1, Fore.RED + "Warning! It is recommended to use a sha512 hash of your password, rather than plain text.\nContinuing as normal...", end=Style.RESET_ALL + "\n")
+                fprint(1, Fore.RED + "Warning! It is recommended to use a sha512 hash of your password, rather than plain text.\nContinuing as normal...")
 
     async def ping_websocket(self):  # Function to periodically ping the websocket to keep connection alive.
         try:
@@ -693,14 +693,14 @@ class Py_Tale:
             asyncio.create_task(self.run_ws())
         except:
             traceback.print_exc()
-            fprint(1, Fore.RED + "Failed at task create_task() in Py_tale.", end=Style.RESET_ALL + "\n")
+            fprint(1, Fore.RED + "Failed at task create_task() in Py_tale.")
             exit()
 
         try:
             asyncio.create_task(self.request_temp_token())
         except:
             traceback.print_exc()
-            fprint(1, Fore.RED + "Failed at task request_temp_token() in Py_tale.", end=Style.RESET_ALL + "\n")
+            fprint(1, Fore.RED + "Failed at task request_temp_token() in Py_tale.")
             exit()
 
         try:
@@ -708,7 +708,7 @@ class Py_Tale:
                 asyncio.create_task(self.request_user_token())
         except:
             traceback.print_exc()
-            fprint(1, Fore.RED + "Failed at task request_user_token() in Py_tale.", end=Style.RESET_ALL + "\n")
+            fprint(1, Fore.RED + "Failed at task request_user_token() in Py_tale.")
             exit()
 
         await self.wait_for_ws()
@@ -716,5 +716,5 @@ class Py_Tale:
             await self.ping_websocket()
         except:
             traceback.print_exc()
-            fprint(1, Fore.RED + "Failed at task ping_websocket() in Py_tale.", end=Style.RESET_ALL + "\n")
+            fprint(1, Fore.RED + "Failed at task ping_websocket() in Py_tale.")
             exit()
