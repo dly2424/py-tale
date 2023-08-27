@@ -115,7 +115,10 @@ class Py_Tale:
         self.ws_headers["User-Agent"] = self.client_id
         self.ws_headers["Authorization"] = f"Bearer {response['access_token']}"
         self.ws_headers["grant_type"] = "client_credentials"
+        self.expires_in = int(response['expires_in'])
+        self.expire_time = datetime.now() + timedelta(seconds=self.expires_in - (60 * 10))
         self.cred_initialized = True
+
 
     async def request_post_console(self, server_id, body='{"should_launch":"false","ignore_offline":"false"}'):  # Uses SERVER id. - verified
         await self.wait_for_ready()
